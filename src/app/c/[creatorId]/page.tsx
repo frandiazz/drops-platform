@@ -3,6 +3,8 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { Star, ExternalLink, Shield, Zap, Mail } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function CreatorProfilePage() {
   const creator = {
     name: 'Nombre del Creador',

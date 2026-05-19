@@ -3,6 +3,8 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { CreditCard, Wallet, DollarSign, Zap, Shield, Mail, ArrowRight, Check } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function CheckoutPage() {
   return (
     <>
