@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
@@ -11,9 +11,12 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [saleResult, setSaleResult] = useState<any>(null);
 
   const packTitle = searchParams.get('title') || 'Premium Content Pack';
   const packPrice = searchParams.get('price') || '29.99';
@@ -21,15 +24,22 @@ function CheckoutContent() {
   const creatorId = searchParams.get('creatorId') || '';
   const packId = searchParams.get('packId') || '';
 
-  const handleCardPayment = async () => {
-    if (!email) { setError('Ingresá tu email'); return; }
-    if (!creatorId || !packId) { setError('Error: datos incompletos'); return; }
+  const handlePay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !cardNumber || !cardExpiry || !cardCvv || !cardName) {
+      setError('Completá todos los campos');
+      return;
+    }
+    if (!creatorId || !packId) {
+      setError('Error: datos del producto');
+      return;
+    }
 
     setProcessing(true);
     setError('');
 
     try {
-      const res = await fetch('/api/create-preference', {
+      const res = await fetch('/api/process-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -38,16 +48,21 @@ function CheckoutContent() {
           creator_id: creatorId,
           content_id: packId,
           title: packTitle,
+          card: {
+            number: cardNumber.replace(/\s/g, ''),
+            expiry: cardExpiry,
+            cvv: cardCvv,
+            name: cardName,
+          },
         }),
       });
 
       const data = await res.json();
 
-      if (data.init_point) {
-        setSaleResult(data);
-        window.location.href = data.init_point;
+      if (data.success) {
+        router.push(`/acceder/${data.access_token}`);
       } else {
-        setError(data.error || 'Error al crear el pago');
+        setError(data.error || 'Pago rechazado');
       }
     } catch {
       setError('Error de conexión');
@@ -55,30 +70,6 @@ function CheckoutContent() {
       setProcessing(false);
     }
   };
-
-  if (saleResult) {
-    return (
-      <>
-        <Header />
-        <main className="min-h-screen pt-24 pb-16 flex items-center justify-center">
-          <div className="max-w-md mx-auto px-4 text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-yellow-500/20 flex items-center justify-center mb-6">
-              <Loader2 className="w-8 h-8 text-yellow-400 animate-spin" />
-            </div>
-            <h1 className="text-2xl font-bold mb-2">Redirigiendo al pago...</h1>
-            <p className="text-muted text-sm mb-6">Completá el pago en la ventana de Mercado Pago.</p>
-            {saleResult.access_token && (
-              <p className="text-xs text-muted">
-                Si no se abre automáticamente, guardá este link: <br />
-                <code className="text-accent-cyan">{window.location.origin}/acceder/{saleResult.access_token}</code>
-              </p>
-            )}
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
 
   return (
     <>
@@ -98,15 +89,15 @@ function CheckoutContent() {
                 </div>
                 <h2 className="text-xl font-bold mb-2">{packTitle}</h2>
                 <p className="text-xs text-muted mb-2">de <span className="text-white">{creatorName}</span></p>
-                <p className="text-muted text-sm mb-4">Contenido exclusivo de alta calidad.</p>
+                <p className="text-muted text-sm mb-4">Contenido exclusivo.</p>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-3xl font-black text-accent-cyan">${packPrice}</span>
                   <span className="text-xs text-muted">USD</span>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato</span></div>
-                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro necesario</span></div>
-                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Pago seguro vía Mercado Pago</span></div>
+                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro</span></div>
+                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Pago seguro</span></div>
                 </div>
               </div>
             </div>
@@ -114,7 +105,7 @@ function CheckoutContent() {
             <div className="lg:col-span-3">
               <div className="mb-8">
                 <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Checkout <span className="gradient-text">Express</span></h1>
-                <p className="text-muted">Pagá con tarjeta al instante. Sin registros.</p>
+                <p className="text-muted">Pagá con tarjeta al instante. Sin salir de esta página.</p>
               </div>
 
               {error && (
@@ -123,32 +114,57 @@ function CheckoutContent() {
                 </div>
               )}
 
-              <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
-                <h3 className="text-lg font-bold mb-4">1. Tu email</h3>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-muted flex-shrink-0" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com"
-                    className="flex-1 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+              <form onSubmit={handlePay}>
+                <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
+                  <h3 className="text-lg font-bold mb-4">1. Email</h3>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                    placeholder="tu@email.com"
+                    className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
                 </div>
-              </div>
 
-              <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
-                <h3 className="text-lg font-bold mb-4">2. Pagá con tarjeta</h3>
-                <p className="text-xs text-muted mb-4">Total: <span className="text-white font-bold">${packPrice} USD</span></p>
+                <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
+                  <h3 className="text-lg font-bold mb-4">2. Datos de la tarjeta</h3>
+                  <p className="text-xs text-muted mb-4">Total: <span className="text-white font-bold">${packPrice} USD</span></p>
 
-                <button
-                  onClick={handleCardPayment}
-                  disabled={processing}
-                  className="w-full h-14 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-lg"
-                >
-                  {processing ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Procesando...</>
-                  ) : (
-                    <><CreditCard className="w-5 h-5" /> Pagar ${packPrice} USD</>
-                  )}
-                </button>
-                <p className="text-xs text-muted text-center mt-3">Serás redirigido a Mercado Pago para completar el pago de forma segura.</p>
-              </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-muted mb-2">Número de tarjeta</label>
+                      <input type="text" inputMode="numeric" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} required
+                        placeholder="5031 7557 3453 0604"
+                        className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-muted mb-2">Vencimiento</label>
+                        <input type="text" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} required
+                          placeholder="11/25"
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted mb-2">CVV</label>
+                        <input type="text" inputMode="numeric" value={cardCvv} onChange={(e) => setCardCvv(e.target.value)} required
+                          placeholder="123"
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-muted mb-2">Titular</label>
+                      <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} required
+                        placeholder="Como figura en la tarjeta"
+                        className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={processing}
+                    className="w-full h-14 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-lg mt-6">
+                    {processing ? (
+                      <><Loader2 className="w-5 h-5 animate-spin" /> Procesando...</>
+                    ) : (
+                      <><CreditCard className="w-5 h-5" /> Pagar ${packPrice} USD</>
+                    )}
+                  </button>
+                </div>
+              </form>
 
               <div className="mt-8 grid grid-cols-3 gap-4">
                 <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Pago express</p></div>
