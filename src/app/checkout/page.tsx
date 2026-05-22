@@ -1,18 +1,27 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Wallet, DollarSign, Zap, Shield, Mail, ArrowRight, Check, Copy, CheckCheck } from 'lucide-react';
+import { CreditCard, Wallet, DollarSign, Zap, Shield, Mail, ArrowRight, Check, Copy, CheckCheck, Loader2 } from 'lucide-react';
+
+declare global {
+  interface Window {
+    MercadoPago: any;
+  }
+}
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
   const [copied, setCopied] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const [mpReady, setMpReady] = useState(false);
 
   const packTitle = searchParams.get('title') || 'Premium Content Pack';
   const packPrice = searchParams.get('price') || '29.99';
@@ -20,19 +29,99 @@ function CheckoutContent() {
   const creatorId = searchParams.get('creatorId') || '';
   const packId = searchParams.get('packId') || '';
 
-  const [saleCreated, setSaleCreated] = useState<{ id: string; method: string } | null>(null);
+  const cardFormRef = useRef<HTMLDivElement>(null);
+  const mpInstanceRef = useRef<any>(null);
 
-  const handlePayment = async (method: string, paymentUrl?: string) => {
+  useEffect(() => {
+    if (typeof window.MercadoPago === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://sdk.mercadopago.com/js/v2';
+      script.onload = () => setMpReady(true);
+      document.head.appendChild(script);
+    } else {
+      setMpReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mpReady || !cardFormRef.current || !window.MercadoPago) return;
+
+    const mp = new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY);
+    mpInstanceRef.current = mp;
+
+    const cardForm = mp.cardForm({
+      amount: packPrice,
+      autoMount: true,
+      form: { id: 'cardform', cardholderName: { id: 'cardholderName' } },
+      callbacks: {
+        onSubmit: async (formData: any) => {
+          setProcessing(true);
+          setError('');
+
+          try {
+            const token = await mp.cardForm().createCardToken();
+            const res = await fetch('/api/create-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                card_token: token.id,
+                amount: parseFloat(packPrice),
+                buyer_email: email,
+                creator_id: creatorId,
+                content_id: packId,
+                payment_method: 'mercadopago',
+              }),
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+              const token = data.sale.access_token;
+              router.push(`/acceder/${token}`);
+            } else {
+              setError(data.error || 'Pago rechazado. Intentá de nuevo.');
+            }
+          } catch {
+            setError('Error al procesar el pago. Intentá de nuevo.');
+          } finally {
+            setProcessing(false);
+          }
+        },
+      },
+    });
+
+    return () => {
+      try { cardForm.unmount(); } catch {}
+    };
+  }, [mpReady, email, packPrice, creatorId, packId, router]);
+
+  const handleCardPay = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!email) {
-      alert('Ingresá tu email primero');
+      setError('Ingresá tu email primero');
       return;
     }
     if (!creatorId || !packId) {
-      alert('Error: datos del producto incompletos');
+      setError('Error: datos del producto incompletos');
+      return;
+    }
+    if (mpInstanceRef.current) {
+      mpInstanceRef.current.cardForm().submit();
+    }
+  };
+
+  const handleAltPayment = async (method: string, paymentUrl?: string) => {
+    if (!email) {
+      setError('Ingresá tu email primero');
+      return;
+    }
+    if (!creatorId || !packId) {
+      setError('Error: datos del producto incompletos');
       return;
     }
 
     setProcessing(true);
+    setError('');
 
     try {
       const res = await fetch('/api/purchase', {
@@ -48,15 +137,16 @@ function CheckoutContent() {
       });
 
       const data = await res.json();
-      if (!data.sale) throw new Error(data.error || 'No sale created');
-
-      setSaleCreated({ id: data.sale.id, method });
+      if (!data.sale) throw new Error(data.error || 'Error');
 
       if (paymentUrl) {
         window.open(paymentUrl, '_blank');
       }
+
+      setError('');
+      router.push(`/checkout/success?email=${encodeURIComponent(email)}&creator=${encodeURIComponent(creatorName)}&pack=${encodeURIComponent(packTitle)}&price=${packPrice}&saleId=${data.sale.id}`);
     } catch (err: any) {
-      alert('Error: ' + (err?.message || 'Desconocido. Revisá la consola (F12).'));
+      setError(err?.message || 'Error al procesar');
     } finally {
       setProcessing(false);
     }
@@ -102,7 +192,7 @@ function CheckoutContent() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted">
                     <Check className="w-4 h-4 text-green-400" />
-                    <span>Pago seguro</span>
+                    <span>Pago seguro vía Mercado Pago</span>
                   </div>
                 </div>
               </div>
@@ -113,9 +203,14 @@ function CheckoutContent() {
                 <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
                   Checkout <span className="gradient-text">Express</span>
                 </h1>
-                <p className="text-muted">Solo necesitás tu email y método de pago. Sin registros, sin contraseñas.</p>
+                <p className="text-muted">Pagá con tarjeta al instante. Sin registros, sin salir de esta página.</p>
               </div>
 
+              {error && (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm mb-6">{error}</div>
+              )}
+
+              {/* Email */}
               <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
                 <h3 className="text-lg font-bold mb-4">1. Tu email</h3>
                 <div className="flex items-center gap-3">
@@ -128,67 +223,73 @@ function CheckoutContent() {
                     className="flex-1 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
                   />
                 </div>
-                <p className="text-xs text-muted mt-2">Te enviaremos el contenido a este email después de verificar el pago.</p>
+                <p className="text-xs text-muted mt-2">Recibí el contenido acá después del pago.</p>
               </div>
 
-              {saleCreated ? (
-                <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6 text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-yellow-500/20 flex items-center justify-center mb-6">
-                    <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Pago iniciado</h3>
-                  <p className="text-muted text-sm mb-4">
-                    Abrimos el link de pago en una nueva pestaña. Completá el pago desde allí.
-                  </p>
-                  <div className="p-4 rounded-lg bg-dark-light/50 border border-slate-700/50 mb-4">
-                    <p className="text-xs text-muted mb-1">ID de transacción:</p>
-                    <code className="text-accent-cyan text-sm">{saleCreated.id}</code>
-                  </div>
-                  <p className="text-xs text-muted">
-                    El creador verificará el pago manualmente y te enviará el contenido a <strong className="text-white">{email}</strong> dentro de las próximas 24-48 horas.
-                  </p>
-                  <div className="mt-6 p-4 rounded-lg bg-accent-violet/10 border border-accent-violet/30">
-                    <p className="text-xs text-muted">
-                      <strong className="text-white">Importante:</strong> Guardá el ID de transacción. Si tenés alguna duda, escribinos a DropsDrops2005@gmail.com con ese ID.
-                    </p>
-                  </div>
-                </div>
-              ) : (
+              {/* Card Payment */}
               <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
-                <h3 className="text-lg font-bold mb-6">2. Elegí tu método de pago</h3>
-                <p className="text-xs text-muted mb-4">Total a pagar: <span className="text-white font-bold">${packPrice} USD</span></p>
+                <h3 className="text-lg font-bold mb-6">2. Pagá con tarjeta</h3>
+                <p className="text-xs text-muted mb-4">Total: <span className="text-white font-bold">${packPrice} USD</span></p>
 
-                <div className="space-y-4">
-                  <button
-                    onClick={() => handlePayment('card', 'https://app.takenos.com/pay/a1b71309-95c7-4b50-9e65-e614f29a79cb')}
-                    disabled={processing}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-700/50 bg-dark-light/30 hover:border-accent-violet/50 hover:bg-dark-light/50 transition-all group disabled:opacity-50"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-accent-violet/10 flex items-center justify-center flex-shrink-0">
-                      <CreditCard className="w-6 h-6 text-accent-violet" />
+                <form id="cardform" onSubmit={handleCardPay}>
+                  <div className="space-y-4">
+                    <div ref={cardFormRef}>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted mb-2">Número de tarjeta</label>
+                          <div id="form-checkout__cardNumber" className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white"></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-muted mb-2">Vencimiento</label>
+                            <div id="form-checkout__expirationDate" className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white"></div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-muted mb-2">CVV</label>
+                            <div id="form-checkout__securityCode" className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white"></div>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted mb-2">Nombre del titular</label>
+                          <input
+                            id="cardholderName"
+                            type="text"
+                            value={cardholderName}
+                            onChange={(e) => setCardholderName(e.target.value)}
+                            className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
+                            placeholder="Como figura en la tarjeta"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold">Tarjeta de crédito o débito</p>
-                      <p className="text-xs text-muted">Pago internacional en USD</p>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-muted group-hover:text-accent-cyan transition-colors flex-shrink-0" />
-                  </button>
 
-                  <button
-                    onClick={() => handlePayment('mercadopago', 'https://mpago.la/1jztdtA')}
-                    disabled={processing}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-700/50 bg-dark-light/30 hover:border-accent-violet/50 hover:bg-dark-light/50 transition-all group disabled:opacity-50"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <Wallet className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold">Mercado Pago</p>
-                      <p className="text-xs text-muted">Pagos en pesos argentinos</p>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-muted group-hover:text-accent-cyan transition-colors flex-shrink-0" />
-                  </button>
+                    <input id="form-checkout__identificationType" type="hidden" value="DNI" />
+                    <input id="form-checkout__installments" type="hidden" value="1" />
 
+                    <button
+                      type="submit"
+                      disabled={processing || !mpReady}
+                      className="w-full h-14 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-lg"
+                    >
+                      {processing ? (
+                        <><Loader2 className="w-5 h-5 animate-spin" /> Procesando...</>
+                      ) : !mpReady ? (
+                        <><Loader2 className="w-5 h-5 animate-spin" /> Cargando...</>
+                      ) : (
+                        <>Pagar ${packPrice} USD</>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Alternative Methods */}
+              <details className="glass-card rounded-2xl overflow-hidden mb-6">
+                <summary className="p-6 sm:p-8 cursor-pointer hover:bg-slate-800/20 transition-colors">
+                  <h3 className="text-lg font-bold">Otros métodos de pago</h3>
+                  <p className="text-xs text-muted mt-1">Cripto, transferencia bancaria</p>
+                </summary>
+                <div className="px-6 sm:px-8 pb-6 space-y-4">
                   <div className="p-4 rounded-xl border border-slate-700/50 bg-dark-light/30">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
@@ -196,23 +297,16 @@ function CheckoutContent() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Criptomonedas (USDT TRC20)</p>
-                        <p className="text-xs text-muted">Envía <span className="text-white font-bold">${packPrice} USD</span> a esta dirección</p>
+                        <p className="text-xs text-muted">Envía a esta dirección</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-dark/50 border border-slate-700/50">
                       <code className="flex-1 text-xs text-accent-cyan break-all">TBLGXxTTmKDhisVYwqmZR9dH57TWUpoNUB</code>
-                      <button
-                        onClick={() => handleCopy('TBLGXxTTmKDhisVYwqmZR9dH57TWUpoNUB')}
-                        className="px-3 py-1.5 bg-accent-violet/20 text-accent-violet rounded text-xs font-medium hover:bg-accent-violet/30 transition-colors flex-shrink-0"
-                      >
+                      <button onClick={() => handleCopy('TBLGXxTTmKDhisVYwqmZR9dH57TWUpoNUB')} className="px-3 py-1.5 bg-accent-violet/20 text-accent-violet rounded text-xs font-medium hover:bg-accent-violet/30 transition-colors flex-shrink-0">
                         {copied ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
-                    <button
-                      onClick={() => handlePayment('crypto')}
-                      disabled={processing}
-                      className="mt-3 w-full py-2 bg-yellow-500/10 text-yellow-400 text-sm font-medium rounded-lg hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={() => handleAltPayment('crypto')} disabled={processing} className="mt-3 w-full py-2 bg-yellow-500/10 text-yellow-400 text-sm font-medium rounded-lg hover:bg-yellow-500/20 transition-colors disabled:opacity-50">
                       Ya transferí - Verificar pago
                     </button>
                   </div>
@@ -224,48 +318,25 @@ function CheckoutContent() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Transferencia bancaria (USD)</p>
-                        <p className="text-xs text-muted">Cuenta internacional Lead Bank</p>
+                        <p className="text-xs text-muted">Lead Bank</p>
                       </div>
                     </div>
                     <div className="space-y-2 text-xs mb-3">
-                      <div className="flex justify-between p-2 rounded bg-dark/50">
-                        <span className="text-muted">Titular:</span>
-                        <span className="text-white font-medium">Augusto Francisco Diaz</span>
-                      </div>
-                      <div className="flex justify-between p-2 rounded bg-dark/50">
-                        <span className="text-muted">Cuenta:</span>
-                        <span className="text-white font-medium">219862671324</span>
-                      </div>
-                      <div className="flex justify-between p-2 rounded bg-dark/50">
-                        <span className="text-muted">Routing:</span>
-                        <span className="text-white font-medium">101019644</span>
-                      </div>
+                      <div className="flex justify-between p-2 rounded bg-dark/50"><span className="text-muted">Titular:</span><span className="text-white font-medium">Augusto Francisco Diaz</span></div>
+                      <div className="flex justify-between p-2 rounded bg-dark/50"><span className="text-muted">Cuenta:</span><span className="text-white font-medium">219862671324</span></div>
+                      <div className="flex justify-between p-2 rounded bg-dark/50"><span className="text-muted">Routing:</span><span className="text-white font-medium">101019644</span></div>
                     </div>
-                    <button
-                      onClick={() => handlePayment('bank')}
-                      disabled={processing}
-                      className="w-full py-2 bg-green-500/10 text-green-400 text-sm font-medium rounded-lg hover:bg-green-500/20 transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={() => handleAltPayment('bank')} disabled={processing} className="w-full py-2 bg-green-500/10 text-green-400 text-sm font-medium rounded-lg hover:bg-green-500/20 transition-colors disabled:opacity-50">
                       Ya transferí - Verificar pago
                     </button>
                   </div>
                 </div>
-              </div>
-              )}
+              </details>
 
               <div className="mt-8 grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" />
-                  <p className="text-xs text-muted">Pago rápido</p>
-                </div>
-                <div className="text-center">
-                  <Shield className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                  <p className="text-xs text-muted">Pago seguro</p>
-                </div>
-                <div className="text-center">
-                  <Mail className="w-6 h-6 text-accent-violet mx-auto mb-2" />
-                  <p className="text-xs text-muted">Contenido por email</p>
-                </div>
+                <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Pago al instante</p></div>
+                <div className="text-center"><Shield className="w-6 h-6 text-green-400 mx-auto mb-2" /><p className="text-xs text-muted">Pago seguro</p></div>
+                <div className="text-center"><Mail className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Contenido automático</p></div>
               </div>
             </div>
           </div>
