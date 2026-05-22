@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Droplets } from 'lucide-react';
@@ -15,10 +15,18 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const isLoginPage = pathname === '/dashboard/login';
+
   useEffect(() => {
+    if (isLoginPage) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         router.push('/dashboard/login');
@@ -37,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, isLoginPage]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -50,6 +58,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="animate-pulse text-accent-cyan text-xl font-bold">Cargando...</div>
       </div>
     );
+  }
+
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   return (
