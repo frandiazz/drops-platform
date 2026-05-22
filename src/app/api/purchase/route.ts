@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Error creating sale:', error);
-      return NextResponse.json({ error: 'Failed to create sale' }, { status: 500 });
+      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, sale: data });
