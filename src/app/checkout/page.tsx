@@ -1,11 +1,17 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CreditCard, Zap, Shield, Mail, Check, Loader2, AlertCircle } from 'lucide-react';
+
+declare global {
+  interface Window {
+    MercadoPago: any;
+  }
+}
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -17,12 +23,33 @@ function CheckoutContent() {
   const [cardName, setCardName] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [mpReady, setMpReady] = useState(false);
+  const [mpInstance, setMpInstance] = useState<any>(null);
 
   const packTitle = searchParams.get('title') || 'Premium Content Pack';
   const packPrice = searchParams.get('price') || '29.99';
   const creatorName = searchParams.get('creator') || 'Creador';
   const creatorId = searchParams.get('creatorId') || '';
   const packId = searchParams.get('packId') || '';
+
+  useEffect(() => {
+    const loadMp = async () => {
+      if (typeof window.MercadoPago !== 'undefined') {
+        setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
+        setMpReady(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://sdk.mercadopago.com/js/v2';
+      script.onload = () => {
+        setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
+        setMpReady(true);
+      };
+      document.head.appendChild(script);
+    };
+    loadMp();
+  }, []);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,26 +61,38 @@ function CheckoutContent() {
       setError('Error: datos del producto');
       return;
     }
+    if (!mpInstance) {
+      setError('Cargando plataforma de pago...');
+      return;
+    }
 
     setProcessing(true);
     setError('');
 
     try {
+      const [expMonth, expYear] = cardExpiry.split('/');
+      const fullYear = expYear?.length === 2 ? `20${expYear}` : expYear;
+
+      const cardToken = await mpInstance.createCardToken({
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        cardExpirationMonth: expMonth || '11',
+        cardExpirationYear: fullYear || '2025',
+        securityCode: cardCvv,
+        cardholderName: cardName,
+        identificationType: 'DNI',
+        identificationNumber: '12345678',
+      });
+
       const res = await fetch('/api/process-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          token: cardToken.id,
           amount: parseFloat(packPrice),
           buyer_email: email,
           creator_id: creatorId,
           content_id: packId,
           title: packTitle,
-          card: {
-            number: cardNumber.replace(/\s/g, ''),
-            expiry: cardExpiry,
-            cvv: cardCvv,
-            name: cardName,
-          },
         }),
       });
 
@@ -64,8 +103,8 @@ function CheckoutContent() {
       } else {
         setError(data.error || 'Pago rechazado');
       }
-    } catch {
-      setError('Error de conexión');
+    } catch (err: any) {
+      setError(err?.cause?.[0]?.description || err?.message || 'Error al procesar el pago');
     } finally {
       setProcessing(false);
     }
@@ -137,7 +176,7 @@ function CheckoutContent() {
                       <div>
                         <label className="block text-sm font-medium text-muted mb-2">Vencimiento</label>
                         <input type="text" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} required
-                          placeholder="11/25"
+                          placeholder="MM/AA"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
                       </div>
                       <div>
@@ -155,10 +194,12 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  <button type="submit" disabled={processing}
+                  <button type="submit" disabled={processing || !mpReady}
                     className="w-full h-14 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-lg mt-6">
                     {processing ? (
                       <><Loader2 className="w-5 h-5 animate-spin" /> Procesando...</>
+                    ) : !mpReady ? (
+                      <><Loader2 className="w-5 h-5 animate-spin" /> Inicializando pago...</>
                     ) : (
                       <><CreditCard className="w-5 h-5" /> Pagar ${packPrice} USD</>
                     )}
