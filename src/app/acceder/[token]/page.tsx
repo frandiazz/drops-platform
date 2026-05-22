@@ -5,7 +5,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, Clock, XCircle, Download, Send, Image as ImageIcon, FileText } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, Download, Send, Image as ImageIcon } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function AccessPage({ params }: { params: { token: string } }) {
   const [sale, setSale] = useState<any>(null);
@@ -19,12 +20,23 @@ export default function AccessPage({ params }: { params: { token: string } }) {
         .from('sales')
         .select('*')
         .eq('access_token', params.token)
-        .single();
+        .maybeSingle();
 
       if (saleError || !saleData) {
         setError('Link inválido o expirado');
         setLoading(false);
         return;
+      }
+
+      // If still pending, verify with MP
+      if (saleData.payment_status === 'pending') {
+        try {
+          const res = await fetch(`/api/verify-payment?sale_id=${saleData.id}`);
+          const result = await res.json();
+          if (result.success) {
+            saleData.payment_status = 'completed';
+          }
+        } catch {}
       }
 
       setSale(saleData);
@@ -34,7 +46,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
           .from('content')
           .select('*')
           .eq('id', saleData.content_id)
-          .single();
+          .maybeSingle();
         if (contentData) setContent(contentData);
       }
 
@@ -87,7 +99,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
               <p className="text-xs text-muted">Email: <span className="text-white">{sale.buyer_email}</span></p>
               <p className="text-xs text-muted mt-1">Monto: <span className="text-accent-cyan font-bold">${sale.amount} USD</span></p>
             </div>
-            <p className="text-xs text-muted">Si ya pagaste, el acceso se habilitará automáticamente en unos minutos.</p>
+            <p className="text-xs text-muted">Si ya pagaste, refrescá la página o esperá unos segundos.</p>
           </div>
         </main>
         <Footer />
@@ -111,11 +123,8 @@ export default function AccessPage({ params }: { params: { token: string } }) {
           {content && (
             <div className="glass-card rounded-2xl p-6 sm:p-8 mb-8">
               <h2 className="text-xl font-bold mb-4">{content.title}</h2>
-              {content.description && (
-                <p className="text-muted text-sm mb-4">{content.description}</p>
-              )}
+              {content.description && <p className="text-muted text-sm mb-4">{content.description}</p>}
 
-              {/* Media files */}
               {content.media_urls && content.media_urls.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-semibold text-muted mb-3 flex items-center gap-2">
@@ -123,13 +132,8 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {content.media_urls.map((url: string, i: number) => (
-                      <a
-                        key={i}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative"
-                      >
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                        className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative">
                         {url.match(/\.(mp4|webm|ogg)$/i) ? (
                           <video src={url} className="w-full h-full object-cover" controls />
                         ) : (
@@ -144,20 +148,15 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 </div>
               )}
 
-              {/* Telegram link */}
               {content.telegram_link && (
                 <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 mb-4">
                   <div className="flex items-start gap-3">
                     <Send className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-semibold mb-1">Acceso a Telegram</p>
-                      <p className="text-xs text-muted mb-3">Unite al grupo privado para acceder al contenido exclusivo:</p>
-                      <a
-                        href={content.telegram_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors"
-                      >
+                      <p className="text-xs text-muted mb-3">Unite al grupo privado:</p>
+                      <a href={content.telegram_link} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors">
                         <Send className="w-4 h-4" /> Unirse al grupo
                       </a>
                     </div>
@@ -165,13 +164,9 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 </div>
               )}
 
-              {/* Delivery type info */}
               {content.delivery_type === 'download' && content.media_urls?.length > 0 && (
-                <a
-                  href={content.media_urls[0]}
-                  download
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-accent-violet text-white font-semibold rounded-xl neon-glow hover:bg-violet-600 transition-all"
-                >
+                <a href={content.media_urls[0]} download
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-accent-violet text-white font-semibold rounded-xl neon-glow hover:bg-violet-600 transition-all">
                   <Download className="w-5 h-5" /> Descargar contenido
                 </a>
               )}
@@ -180,7 +175,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
 
           <div className="glass-card rounded-xl p-6 text-center">
             <p className="text-xs text-muted mb-2">Compra realizada el {new Date(sale.created_at).toLocaleDateString('es-AR')}</p>
-            <p className="text-xs text-muted">¿Tenés dudas? Escribinos a DropsDrops2005@gmail.com</p>
+            <p className="text-xs text-muted">¿Dudas? Escribinos a DropsDrops2005@gmail.com</p>
           </div>
         </div>
       </main>
