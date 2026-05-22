@@ -14,21 +14,28 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
 
   useEffect(() => {
     const fetch = async () => {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', params.creatorId)
-        .single();
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', params.creatorId)
+          .maybeSingle();
 
-      const { data: contentData } = await supabase
-        .from('content')
-        .select('*')
-        .eq('creator_id', params.creatorId)
-        .eq('is_active', true);
+        if (profileError) console.error('Profile fetch error:', profileError);
 
-      setProfile(profileData);
-      setPacks(contentData || []);
-      setLoading(false);
+        const { data: contentData } = await supabase
+          .from('content')
+          .select('*')
+          .eq('creator_id', params.creatorId)
+          .eq('is_active', true);
+
+        setProfile(profileData || null);
+        setPacks(contentData || []);
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetch();
   }, [params.creatorId]);
