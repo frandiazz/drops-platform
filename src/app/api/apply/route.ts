@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, email, socials, service } = body;
-
-    const supabase = createClient();
 
     const { error: dbError } = await supabase.from('applications').insert({
       name,
