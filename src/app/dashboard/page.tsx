@@ -76,10 +76,10 @@ export default function DashboardPage() {
             <p className="text-sm text-muted mb-2">Compartí este link con tus fans:</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-sm text-accent-cyan bg-dark/50 px-3 py-2 rounded">
-                drops-ly.vercel.app/c/{user?.id?.substring(0, 8) || 'tu-usuario'}
+                drops-ly.vercel.app/c/{user?.id || 'tu-usuario'}
               </code>
               <button
-                onClick={() => navigator.clipboard.writeText(`https://drops-ly.vercel.app/c/${user?.id?.substring(0, 8) || 'tu-usuario'}`)}
+                onClick={() => navigator.clipboard.writeText(`https://drops-ly.vercel.app/c/${user?.id || 'tu-usuario'}`)}
                 className="px-3 py-2 bg-accent-violet/20 text-accent-violet rounded hover:bg-accent-violet/30 transition-colors text-sm font-medium"
               >
                 Copiar
