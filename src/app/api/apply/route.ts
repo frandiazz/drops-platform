@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, email, socials, service } = body;
 
-    const { error: dbError } = await supabase.from('applications').insert({
-      name,
-      email,
-      socials,
-      service,
-    });
-
-    if (dbError) {
-      console.error('Error saving to database:', dbError);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseAnonKey) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const { error: dbError } = await supabase.from('applications').insert({
+          name, email, socials, service,
+        });
+        if (dbError) console.error('DB error:', dbError);
+      }
+    } catch (dbError) {
+      console.error('Database error:', dbError);
     }
 
     const serviceLabels: Record<string, string> = {
