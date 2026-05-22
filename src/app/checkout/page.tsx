@@ -5,12 +5,42 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Zap, Shield, Mail, Check, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, Zap, Shield, Mail, Check, Loader2, AlertCircle, FileText } from 'lucide-react';
 
 declare global {
-  interface Window {
-    MercadoPago: any;
+  interface Window { MercadoPago: any; }
+}
+
+const CARD_BRANDS: Record<string, string> = {
+  '4': 'visa',
+  '51': 'master',
+  '52': 'master',
+  '53': 'master',
+  '54': 'master',
+  '55': 'master',
+  '34': 'amex',
+  '37': 'amex',
+  '300': 'diners',
+  '301': 'diners',
+  '302': 'diners',
+  '303': 'diners',
+  '304': 'diners',
+  '305': 'diners',
+  '36': 'diners',
+  '38': 'diners',
+  '39': 'diners',
+  '6011': 'discover',
+  '622': 'discover',
+  '64': 'discover',
+  '65': 'discover',
+};
+
+function detectCardBrand(number: string): string {
+  const clean = number.replace(/\s/g, '');
+  for (const [prefix, brand] of Object.entries(CARD_BRANDS)) {
+    if (clean.startsWith(prefix)) return brand;
   }
+  return 'master';
 }
 
 function CheckoutContent() {
@@ -21,6 +51,8 @@ function CheckoutContent() {
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
   const [cardName, setCardName] = useState('');
+  const [docType, setDocType] = useState('DNI');
+  const [docNumber, setDocNumber] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [mpReady, setMpReady] = useState(false);
@@ -28,43 +60,35 @@ function CheckoutContent() {
 
   const packTitle = searchParams.get('title') || 'Premium Content Pack';
   const packPrice = searchParams.get('price') || '29.99';
-  const creatorName = searchParams.get('creator') || 'Creador';
   const creatorId = searchParams.get('creatorId') || '';
   const packId = searchParams.get('packId') || '';
 
   useEffect(() => {
-    const loadMp = async () => {
+    const load = async () => {
       if (typeof window.MercadoPago !== 'undefined') {
         setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
         setMpReady(true);
         return;
       }
-
-      const script = document.createElement('script');
-      script.src = 'https://sdk.mercadopago.com/js/v2';
-      script.onload = () => {
+      const s = document.createElement('script');
+      s.src = 'https://sdk.mercadopago.com/js/v2';
+      s.onload = () => {
         setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
         setMpReady(true);
       };
-      document.head.appendChild(script);
+      document.head.appendChild(s);
     };
-    loadMp();
+    load();
   }, []);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !cardNumber || !cardExpiry || !cardCvv || !cardName) {
+    if (!email || !cardNumber || !cardExpiry || !cardCvv || !cardName || !docNumber) {
       setError('Completá todos los campos');
       return;
     }
-    if (!creatorId || !packId) {
-      setError('Error: datos del producto');
-      return;
-    }
-    if (!mpInstance) {
-      setError('Cargando plataforma de pago...');
-      return;
-    }
+    if (!creatorId || !packId) { setError('Error: datos del producto'); return; }
+    if (!mpInstance) { setError('Cargando plataforma de pago...'); return; }
 
     setProcessing(true);
     setError('');
@@ -75,29 +99,32 @@ function CheckoutContent() {
 
       const cardToken = await mpInstance.createCardToken({
         cardNumber: cardNumber.replace(/\s/g, ''),
-        cardExpirationMonth: expMonth || '11',
-        cardExpirationYear: fullYear || '2025',
+        cardExpirationMonth: expMonth || '12',
+        cardExpirationYear: fullYear || '2026',
         securityCode: cardCvv,
         cardholderName: cardName,
-        identificationType: 'DNI',
-        identificationNumber: '12345678',
+        identificationType: docType,
+        identificationNumber: docNumber,
       });
+
+      const brand = detectCardBrand(cardNumber);
 
       const res = await fetch('/api/process-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           token: cardToken.id,
+          payment_method_id: cardToken.payment_method?.id || brand,
           amount: parseFloat(packPrice),
           buyer_email: email,
           creator_id: creatorId,
           content_id: packId,
           title: packTitle,
+          identification: { type: docType, number: docNumber },
         }),
       });
 
       const data = await res.json();
-
       if (data.success) {
         router.push(`/acceder/${data.access_token}`);
       } else {
@@ -127,8 +154,7 @@ function CheckoutContent() {
                   <span className="text-6xl">{'\u{1F4E6}'}</span>
                 </div>
                 <h2 className="text-xl font-bold mb-2">{packTitle}</h2>
-                <p className="text-xs text-muted mb-2">de <span className="text-white">{creatorName}</span></p>
-                <p className="text-muted text-sm mb-4">Contenido exclusivo.</p>
+                <p className="text-xs text-muted mb-2">Contenido exclusivo en Drops</p>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-3xl font-black text-accent-cyan">${packPrice}</span>
                   <span className="text-xs text-muted">USD</span>
@@ -156,8 +182,7 @@ function CheckoutContent() {
               <form onSubmit={handlePay}>
                 <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
                   <h3 className="text-lg font-bold mb-4">1. Email</h3>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                    placeholder="tu@email.com"
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="tu@email.com"
                     className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
                 </div>
 
@@ -191,6 +216,23 @@ function CheckoutContent() {
                       <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} required
                         placeholder="Como figura en la tarjeta"
                         className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-muted mb-2">Tipo de doc.</label>
+                        <select value={docType} onChange={(e) => setDocType(e.target.value)}
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors appearance-none">
+                          <option value="DNI">DNI</option>
+                          <option value="CI">CI</option>
+                          <option value="Pasaporte">Pasaporte</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-muted mb-2">Número de documento</label>
+                        <input type="text" value={docNumber} onChange={(e) => setDocNumber(e.target.value)} required
+                          placeholder="12345678"
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                      </div>
                     </div>
                   </div>
 
