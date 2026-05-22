@@ -68,9 +68,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: preference.message || 'Failed to create MP preference' }, { status: 500 });
     }
 
+    const isSandbox = mpAccessToken.startsWith('TEST-');
+
     return NextResponse.json({
       success: true,
-      init_point: preference.init_point,
+      init_point: isSandbox ? preference.sandbox_init_point : preference.init_point,
       preference_id: preference.id,
       sale_id: sale.id,
       access_token: sale.access_token,
