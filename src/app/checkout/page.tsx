@@ -20,6 +20,8 @@ function CheckoutContent() {
   const creatorId = searchParams.get('creatorId') || '';
   const packId = searchParams.get('packId') || '';
 
+  const [saleCreated, setSaleCreated] = useState<{ id: string; method: string } | null>(null);
+
   const handlePayment = async (method: string, paymentUrl?: string) => {
     if (!email) {
       alert('Ingresá tu email primero');
@@ -46,12 +48,13 @@ function CheckoutContent() {
       });
 
       const data = await res.json();
+      if (!data.sale) throw new Error('No sale created');
+
+      setSaleCreated({ id: data.sale.id, method });
 
       if (paymentUrl) {
         window.open(paymentUrl, '_blank');
       }
-
-      router.push(`/checkout/success?email=${encodeURIComponent(email)}&creator=${encodeURIComponent(creatorName)}&pack=${encodeURIComponent(packTitle)}&price=${packPrice}&saleId=${data.sale?.id || ''}`);
     } catch {
       alert('Error al procesar la compra. Intentalo de nuevo.');
     } finally {
@@ -128,6 +131,29 @@ function CheckoutContent() {
                 <p className="text-xs text-muted mt-2">Te enviaremos el contenido a este email después de verificar el pago.</p>
               </div>
 
+              {saleCreated ? (
+                <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6 text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-yellow-500/20 flex items-center justify-center mb-6">
+                    <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Pago iniciado</h3>
+                  <p className="text-muted text-sm mb-4">
+                    Abrimos el link de pago en una nueva pestaña. Completá el pago desde allí.
+                  </p>
+                  <div className="p-4 rounded-lg bg-dark-light/50 border border-slate-700/50 mb-4">
+                    <p className="text-xs text-muted mb-1">ID de transacción:</p>
+                    <code className="text-accent-cyan text-sm">{saleCreated.id}</code>
+                  </div>
+                  <p className="text-xs text-muted">
+                    El creador verificará el pago manualmente y te enviará el contenido a <strong className="text-white">{email}</strong> dentro de las próximas 24-48 horas.
+                  </p>
+                  <div className="mt-6 p-4 rounded-lg bg-accent-violet/10 border border-accent-violet/30">
+                    <p className="text-xs text-muted">
+                      <strong className="text-white">Importante:</strong> Guardá el ID de transacción. Si tenés alguna duda, escribinos a DropsDrops2005@gmail.com con ese ID.
+                    </p>
+                  </div>
+                </div>
+              ) : (
               <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
                 <h3 className="text-lg font-bold mb-6">2. Elegí tu método de pago</h3>
                 <p className="text-xs text-muted mb-4">Total a pagar: <span className="text-white font-bold">${packPrice} USD</span></p>
@@ -225,6 +251,7 @@ function CheckoutContent() {
                   </div>
                 </div>
               </div>
+              )}
 
               <div className="mt-8 grid grid-cols-3 gap-4">
                 <div className="text-center">
