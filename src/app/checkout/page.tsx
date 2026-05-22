@@ -1,23 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard, Wallet, DollarSign, Zap, Shield, Mail, ArrowRight, Check, Copy, CheckCheck } from 'lucide-react';
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
-  const [buyerEmail, setBuyerEmail] = useState('');
 
   const packTitle = searchParams.get('title') || 'Premium Content Pack';
   const packPrice = searchParams.get('price') || '29.99';
   const creatorName = searchParams.get('creator') || 'Creador';
   const creatorId = searchParams.get('creatorId') || '';
-  const packId = searchParams.get('packId') || '';
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -36,11 +34,10 @@ export default function CheckoutPage() {
           </Link>
 
           <div className="grid lg:grid-cols-5 gap-8">
-            {/* Product Info */}
             <div className="lg:col-span-2">
               <div className="glass-card rounded-2xl p-6 sticky top-24">
                 <div className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center mb-6">
-                  <span className="text-6xl">📦</span>
+                  <span className="text-6xl">{'\u{1F4E6}'}</span>
                 </div>
                 <h2 className="text-xl font-bold mb-2">{packTitle}</h2>
                 <p className="text-xs text-muted mb-2">de <span className="text-white">{creatorName}</span></p>
@@ -66,7 +63,6 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Checkout Form */}
             <div className="lg:col-span-3">
               <div className="mb-8">
                 <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
@@ -75,7 +71,6 @@ export default function CheckoutPage() {
                 <p className="text-muted">Solo necesitás tu email y método de pago. Sin registros, sin contraseñas.</p>
               </div>
 
-              {/* Email Input */}
               <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
                 <h3 className="text-lg font-bold mb-4">1. Tu email</h3>
                 <div className="flex items-center gap-3">
@@ -91,16 +86,11 @@ export default function CheckoutPage() {
                 <p className="text-xs text-muted mt-2">Te enviaremos el contenido a este email después del pago.</p>
               </div>
 
-              {/* Payment Methods */}
               <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
                 <h3 className="text-lg font-bold mb-6">2. Elegí tu método de pago</h3>
                 <p className="text-xs text-muted mb-4">Total a pagar: <span className="text-white font-bold">${packPrice} USD</span></p>
 
                 <div className="space-y-4">
-                <h3 className="text-lg font-bold mb-6">Elegí tu método de pago</h3>
-
-                <div className="space-y-4">
-                  {/* Takenos - Card */}
                   <Link
                     href={`/checkout/success?email=${encodeURIComponent(email)}&creator=${encodeURIComponent(creatorName)}&pack=${encodeURIComponent(packTitle)}&price=${packPrice}`}
                     className="flex items-center gap-4 p-4 rounded-xl border border-slate-700/50 bg-dark-light/30 hover:border-accent-violet/50 hover:bg-dark-light/50 transition-all group"
@@ -110,12 +100,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">Tarjeta de crédito o débito</p>
-                      <p className="text-xs text-muted">Pago internacional en USD · Procesado por Takenos</p>
+                      <p className="text-xs text-muted">Pago internacional en USD</p>
                     </div>
                     <ArrowRight className="w-5 h-5 text-muted group-hover:text-accent-cyan transition-colors flex-shrink-0" />
                   </Link>
 
-                  {/* Mercado Pago */}
                   <Link
                     href={`/checkout/success?email=${encodeURIComponent(email)}&creator=${encodeURIComponent(creatorName)}&pack=${encodeURIComponent(packTitle)}&price=${packPrice}`}
                     className="flex items-center gap-4 p-4 rounded-xl border border-slate-700/50 bg-dark-light/30 hover:border-accent-violet/50 hover:bg-dark-light/50 transition-all group"
@@ -130,7 +119,6 @@ export default function CheckoutPage() {
                     <ArrowRight className="w-5 h-5 text-muted group-hover:text-accent-cyan transition-colors flex-shrink-0" />
                   </Link>
 
-                  {/* Crypto */}
                   <div className="p-4 rounded-xl border border-slate-700/50 bg-dark-light/30">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
@@ -152,7 +140,6 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* Bank Transfer */}
                   <div className="p-4 rounded-xl border border-slate-700/50 bg-dark-light/30">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
@@ -160,7 +147,7 @@ export default function CheckoutPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Transferencia bancaria (USD)</p>
-                        <p className="text-xs text-muted">Cuenta internacional Lead Bank · Monto: <span className="text-white font-bold">${packPrice} USD</span></p>
+                        <p className="text-xs text-muted">Cuenta internacional Lead Bank</p>
                       </div>
                     </div>
                     <div className="space-y-2 text-xs">
@@ -189,7 +176,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Trust badges */}
               <div className="mt-8 grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" />
@@ -210,5 +196,13 @@ export default function CheckoutPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-muted">Cargando...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
