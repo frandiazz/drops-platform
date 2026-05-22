@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Check, Mail, ArrowLeft } from 'lucide-react';
+import { Check, Mail, ArrowLeft, Clock } from 'lucide-react';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -13,6 +13,7 @@ function SuccessContent() {
   const packTitle = searchParams.get('pack') || 'Premium Content Pack';
   const creatorName = searchParams.get('creator') || 'Creador';
   const price = searchParams.get('price') || '0';
+  const saleId = searchParams.get('saleId') || '';
 
   return (
     <>
@@ -23,26 +24,35 @@ function SuccessContent() {
             <Check className="w-10 h-10 text-green-400" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-4">
-            Pago <span className="gradient-text">exitoso</span>
+            Compra <span className="gradient-text">registrada</span>
           </h1>
           <p className="text-muted text-lg mb-2">
-            Compraste <strong className="text-white">{packTitle}</strong> de <strong className="text-white">{creatorName}</strong>
+            <strong className="text-white">{packTitle}</strong> de <strong className="text-white">{creatorName}</strong>
           </p>
-          <p className="text-muted mb-8">
+          <p className="text-muted mb-6">
             por <span className="text-accent-cyan font-bold">${price} USD</span>
           </p>
+
           <div className="glass-card rounded-2xl p-8 mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <Mail className="w-6 h-6 text-accent-cyan" />
-              <h3 className="text-lg font-bold">Contenido enviado a {email}</h3>
+              <Clock className="w-6 h-6 text-yellow-400" />
+              <h3 className="text-lg font-bold">Pendiente de verificación</h3>
             </div>
-            <p className="text-muted text-sm mb-6">
-              Te enviamos un email con el link de acceso. Si no lo ves, revis la carpeta de spam.
+            <p className="text-muted text-sm mb-4">
+              Estamos verificando tu pago. El contenido se te enviará a <strong className="text-white">{email}</strong> una vez confirmado.
             </p>
-            <p className="text-xs text-muted">
-              Si ten&eacute;s alguna duda, escribinos a DropsDrops2005@gmail.com
-            </p>
+            {saleId && (
+              <p className="text-xs text-muted mb-4">
+                ID de compra: <code className="text-accent-cyan">{saleId}</code>
+              </p>
+            )}
+            <div className="p-4 rounded-lg bg-dark-light/50 border border-slate-700/50">
+              <p className="text-sm text-muted">
+                <strong className="text-white">¿No te llega nada?</strong> Escribinos a DropsDrops2005@gmail.com con tu ID de compra.
+              </p>
+            </div>
           </div>
+
           <div className="space-y-4">
             <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" /> Volver al inicio
