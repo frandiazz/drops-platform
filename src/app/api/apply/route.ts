@@ -12,7 +12,6 @@ export async function POST(request: Request) {
       email,
       socials,
       service,
-      created_at: new Date().toISOString(),
     });
 
     if (dbError) {
