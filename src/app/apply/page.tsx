@@ -28,11 +28,12 @@ export default function ApplyPage() {
         console.error('Error saving:', error);
       }
 
-      const mailtoLink = `mailto:DropsDrops2005@gmail.com?subject=Nueva postulación de creador: ${encodeURIComponent(form.name)}&body=${encodeURIComponent(
-        `Nombre artístico: ${form.name}\nEmail: ${form.email}\nRedes sociales: ${form.socials}\nServicio deseado: ${form.service}`
-      )}`;
+      fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      }).catch(() => {});
 
-      window.open(mailtoLink, '_blank');
       setSubmitted(true);
     } catch (err) {
       console.error(err);
