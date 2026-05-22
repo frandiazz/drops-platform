@@ -48,15 +48,15 @@ function CheckoutContent() {
       });
 
       const data = await res.json();
-      if (!data.sale) throw new Error('No sale created');
+      if (!data.sale) throw new Error(data.error || 'No sale created');
 
       setSaleCreated({ id: data.sale.id, method });
 
       if (paymentUrl) {
         window.open(paymentUrl, '_blank');
       }
-    } catch {
-      alert('Error al procesar la compra. Intentalo de nuevo.');
+    } catch (err: any) {
+      alert('Error: ' + (err?.message || 'Desconocido. Revisá la consola (F12).'));
     } finally {
       setProcessing(false);
     }
