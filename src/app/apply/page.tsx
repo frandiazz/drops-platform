@@ -34,6 +34,11 @@ export default function ApplyPage() {
         body: JSON.stringify(form),
       }).catch(() => {});
 
+      const mailtoLink = `mailto:DropsDrops2005@gmail.com?subject=Nueva postulación: ${encodeURIComponent(form.name)}&body=${encodeURIComponent(
+        `Nombre: ${form.name}\nEmail: ${form.email}\nRedes: ${form.socials}\nServicio: ${form.service}`
+      )}`;
+      window.open(mailtoLink, '_blank');
+
       setSubmitted(true);
     } catch (err) {
       console.error(err);
