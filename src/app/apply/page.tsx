@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Send, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 
 export default function ApplyPage() {
   const [form, setForm] = useState({ name: '', email: '', socials: '', service: '' });
@@ -16,17 +17,22 @@ export default function ApplyPage() {
     setLoading(true);
 
     try {
-      const mailtoLink = `mailto:DropsDrops2005@gmail.com?subject=Nueva postulación de creador: ${encodeURIComponent(form.name)}&subject=${encodeURIComponent(`Nueva postulación: ${form.name}`)}&body=${encodeURIComponent(
+      const { error } = await supabase.from('applications').insert({
+        name: form.name,
+        email: form.email,
+        socials: form.socials,
+        service: form.service,
+      });
+
+      if (error) {
+        console.error('Error saving:', error);
+      }
+
+      const mailtoLink = `mailto:DropsDrops2005@gmail.com?subject=Nueva postulación de creador: ${encodeURIComponent(form.name)}&body=${encodeURIComponent(
         `Nombre artístico: ${form.name}\nEmail: ${form.email}\nRedes sociales: ${form.socials}\nServicio deseado: ${form.service}`
       )}`;
 
-      await fetch('/api/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-
-      window.location.href = mailtoLink;
+      window.open(mailtoLink, '_blank');
       setSubmitted(true);
     } catch (err) {
       console.error(err);
