@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Upload, Image as ImageIcon, Trash2, ExternalLink, Plus, X } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Upload, Image as ImageIcon, Trash2, Plus, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function ContentPage() {
+  const [user, setUser] = useState<any>(null);
+  const [packs, setPacks] = useState<any[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState('');
@@ -13,6 +16,20 @@ export default function ContentPage() {
   const [telegramLink, setTelegramLink] = useState('');
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+        const { data } = await supabase
+          .from('content')
+          .select('*')
+          .eq('creator_id', session.user.id)
+          .order('created_at', { ascending: false });
+        if (data) setPacks(data);
+      }
+    });
+  }, []);
 
   const handleFileUpload = useCallback(async (file: File) => {
     setUploading(true);
@@ -53,8 +70,24 @@ export default function ContentPage() {
   };
 
   const handleSave = async () => {
-    // TODO: Save to Supabase
-    console.log({ title, description, price, deliveryType, telegramLink, uploadedUrls });
+    if (!user) return;
+    const { error } = await supabase.from('content').insert({
+      creator_id: user.id,
+      title,
+      description,
+      price: parseFloat(price),
+      media_urls: uploadedUrls,
+      delivery_type: deliveryType,
+      telegram_link: telegramLink || null,
+    });
+    if (!error) {
+      const { data } = await supabase
+        .from('content')
+        .select('*')
+        .eq('creator_id', user.id)
+        .order('created_at', { ascending: false });
+      if (data) setPacks(data);
+    }
     setShowForm(false);
     setTitle('');
     setDescription('');
@@ -204,10 +237,34 @@ export default function ContentPage() {
 
       {/* Content List */}
       <div className="glass-card rounded-xl overflow-hidden">
-        <div className="p-6 text-center text-muted">
-          <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Aún no subiste contenido. Hacé click en &ldquo;Nuevo pack&rdquo; para empezar.</p>
-        </div>
+        {packs.length === 0 ? (
+          <div className="p-6 text-center text-muted">
+            <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">Aún no subiste contenido. Hacé click en &ldquo;Nuevo pack&rdquo; para empezar.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-800/50">
+            {packs.map((pack) => (
+              <div key={pack.id} className="p-4 sm:p-6 flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {pack.media_urls?.[0] ? (
+                    <img src={pack.media_urls[0]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-muted" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{pack.title}</p>
+                  <p className="text-xs text-muted truncate">{pack.description || 'Sin descripción'}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-sm font-bold text-accent-cyan">${pack.price}</p>
+                  <p className="text-xs text-muted">{pack.is_active ? 'Activo' : 'Inactivo'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

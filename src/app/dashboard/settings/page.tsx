@@ -24,6 +24,17 @@ export default function SettingsPage() {
     await supabase.auth.updateUser({
       data: { stage_name: stageName, socials },
     });
+
+    if (user) {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        stage_name: stageName,
+        socials,
+        email: user.email,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };

@@ -1,17 +1,36 @@
+'use client';
+
+import { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { CreditCard, Wallet, DollarSign, Zap, Shield, Mail, ArrowRight, Check } from 'lucide-react';
-
-export const dynamic = 'force-dynamic';
+import { useSearchParams } from 'next/navigation';
+import { CreditCard, Wallet, DollarSign, Zap, Shield, Mail, ArrowRight, Check, Copy, CheckCheck } from 'lucide-react';
 
 export default function CheckoutPage() {
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [buyerEmail, setBuyerEmail] = useState('');
+
+  const packTitle = searchParams.get('title') || 'Premium Content Pack';
+  const packPrice = searchParams.get('price') || '29.99';
+  const creatorName = searchParams.get('creator') || 'Creador';
+  const creatorId = searchParams.get('creatorId') || '';
+  const packId = searchParams.get('packId') || '';
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <>
       <Header />
       <main className="min-h-screen pt-24 pb-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8">
+          <Link href={creatorId ? `/c/${creatorId}` : "/"} className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Volver
           </Link>
@@ -23,10 +42,11 @@ export default function CheckoutPage() {
                 <div className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center mb-6">
                   <span className="text-6xl">📦</span>
                 </div>
-                <h2 className="text-xl font-bold mb-2">Premium Content Pack</h2>
+                <h2 className="text-xl font-bold mb-2">{packTitle}</h2>
+                <p className="text-xs text-muted mb-2">de <span className="text-white">{creatorName}</span></p>
                 <p className="text-muted text-sm mb-4">Contenido exclusivo de alta calidad. Acceso inmediato después del pago.</p>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl font-black text-accent-cyan">$29.99</span>
+                  <span className="text-3xl font-black text-accent-cyan">${packPrice}</span>
                   <span className="text-xs text-muted">USD</span>
                 </div>
                 <div className="space-y-3">
@@ -55,33 +75,34 @@ export default function CheckoutPage() {
                 <p className="text-muted">Solo necesitás tu email y método de pago. Sin registros, sin contraseñas.</p>
               </div>
 
-              {/* Steps */}
-              <div className="flex items-center gap-4 mb-8">
-                {[
-                  { n: 1, label: 'Tu email', done: true },
-                  { n: 2, label: 'Método de pago', done: false },
-                  { n: 3, label: 'Recibir contenido', done: false },
-                ].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2 flex-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step.done ? 'bg-accent-violet text-white' : 'bg-dark-light border border-slate-700 text-muted'}`}>
-                      {step.n}
-                    </div>
-                    <span className={`text-xs hidden sm:inline ${step.done ? 'text-white' : 'text-muted'}`}>{step.label}</span>
-                    {i < 2 && <div className="flex-1 h-px bg-slate-700/50"></div>}
-                  </div>
-                ))}
+              {/* Email Input */}
+              <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
+                <h3 className="text-lg font-bold mb-4">1. Tu email</h3>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-muted flex-shrink-0" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    className="flex-1 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
+                  />
+                </div>
+                <p className="text-xs text-muted mt-2">Te enviaremos el contenido a este email después del pago.</p>
               </div>
 
               {/* Payment Methods */}
-              <div className="glass-card rounded-2xl p-6 sm:p-8">
+              <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
+                <h3 className="text-lg font-bold mb-6">2. Elegí tu método de pago</h3>
+                <p className="text-xs text-muted mb-4">Total a pagar: <span className="text-white font-bold">${packPrice} USD</span></p>
+
+                <div className="space-y-4">
                 <h3 className="text-lg font-bold mb-6">Elegí tu método de pago</h3>
 
                 <div className="space-y-4">
                   {/* Takenos - Card */}
-                  <a
-                    href="https://app.takenos.com/pay/a1b71309-95c7-4b50-9e65-e614f29a79cb"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href={`/checkout/success?email=${encodeURIComponent(email)}&creator=${encodeURIComponent(creatorName)}&pack=${encodeURIComponent(packTitle)}&price=${packPrice}`}
                     className="flex items-center gap-4 p-4 rounded-xl border border-slate-700/50 bg-dark-light/30 hover:border-accent-violet/50 hover:bg-dark-light/50 transition-all group"
                   >
                     <div className="w-12 h-12 rounded-lg bg-accent-violet/10 flex items-center justify-center flex-shrink-0">
@@ -92,13 +113,11 @@ export default function CheckoutPage() {
                       <p className="text-xs text-muted">Pago internacional en USD · Procesado por Takenos</p>
                     </div>
                     <ArrowRight className="w-5 h-5 text-muted group-hover:text-accent-cyan transition-colors flex-shrink-0" />
-                  </a>
+                  </Link>
 
                   {/* Mercado Pago */}
-                  <a
-                    href="https://mpago.la/1jztdtA"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href={`/checkout/success?email=${encodeURIComponent(email)}&creator=${encodeURIComponent(creatorName)}&pack=${encodeURIComponent(packTitle)}&price=${packPrice}`}
                     className="flex items-center gap-4 p-4 rounded-xl border border-slate-700/50 bg-dark-light/30 hover:border-accent-violet/50 hover:bg-dark-light/50 transition-all group"
                   >
                     <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
@@ -109,7 +128,7 @@ export default function CheckoutPage() {
                       <p className="text-xs text-muted">Pagos en pesos argentinos</p>
                     </div>
                     <ArrowRight className="w-5 h-5 text-muted group-hover:text-accent-cyan transition-colors flex-shrink-0" />
-                  </a>
+                  </Link>
 
                   {/* Crypto */}
                   <div className="p-4 rounded-xl border border-slate-700/50 bg-dark-light/30">
@@ -119,16 +138,16 @@ export default function CheckoutPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Criptomonedas (USDT TRC20)</p>
-                        <p className="text-xs text-muted">Envía el monto exacto a esta dirección</p>
+                        <p className="text-xs text-muted">Envía <span className="text-white font-bold">${packPrice} USD</span> a esta dirección</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-dark/50 border border-slate-700/50">
                       <code className="flex-1 text-xs text-accent-cyan break-all">TBLGXxTTmKDhisVYwqmZR9dH57TWUpoNUB</code>
                       <button
-                        onClick={() => navigator.clipboard.writeText('TBLGXxTTmKDhisVYwqmZR9dH57TWUpoNUB')}
+                        onClick={() => handleCopy('TBLGXxTTmKDhisVYwqmZR9dH57TWUpoNUB')}
                         className="px-3 py-1.5 bg-accent-violet/20 text-accent-violet rounded text-xs font-medium hover:bg-accent-violet/30 transition-colors flex-shrink-0"
                       >
-                        Copiar
+                        {copied ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
@@ -141,7 +160,7 @@ export default function CheckoutPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Transferencia bancaria (USD)</p>
-                        <p className="text-xs text-muted">Cuenta internacional Lead Bank</p>
+                        <p className="text-xs text-muted">Cuenta internacional Lead Bank · Monto: <span className="text-white font-bold">${packPrice} USD</span></p>
                       </div>
                     </div>
                     <div className="space-y-2 text-xs">

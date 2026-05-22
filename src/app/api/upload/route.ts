@@ -12,7 +12,7 @@ function configureCloudinary() {
 export async function POST(request: Request) {
   try {
     configureCloudinary();
-    const body = await request.json();
+    const body = JSON.parse(await request.text());
     const { image } = body;
 
     const result = await cloudinary.uploader.upload(image, {
