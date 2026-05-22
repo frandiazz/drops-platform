@@ -28,7 +28,7 @@ export async function POST(request: Request) {
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Redes sociales:</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; white-space: pre-line;">${socials}</td></tr>
               <tr><td style="padding: 8px; font-weight: bold;">Servicio:</td><td style="padding: 8px;">${serviceLabels[service] || service}</td></tr>
             </table>
-            <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">Enviado desde drops.vercel.app</p>
+            <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">Enviado desde drops-ly.vercel.app</p>
           </div>
         `,
       });

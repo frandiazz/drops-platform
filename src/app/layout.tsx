@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: 'Drops | Monetización Inteligente para Creadores',
     description: 'Maximizamos tus ingresos de forma inteligente. Vos enfocate en crear.',
     type: 'website',
-    url: 'https://drops.vercel.app',
+    url: 'https://drops-ly.vercel.app',
     locale: 'es_AR',
   },
   twitter: {
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@type": "Organization",
               "name": "Drops",
               "description": "Agencia de monetización y management para creadores de contenido y modelos de IA",
-              "url": "https://drops.vercel.app",
+              "url": "https://drops-ly.vercel.app",
             }),
           }}
         />
