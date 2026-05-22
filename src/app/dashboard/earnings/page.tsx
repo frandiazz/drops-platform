@@ -1,11 +1,55 @@
 'use client';
 
-import { useState } from 'react';
-import { DollarSign, CreditCard, Wallet, ArrowUpRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, CreditCard, Wallet, ArrowUpRight, CheckCircle, Mail, Clock, ExternalLink } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function EarningsPage() {
+  const [user, setUser] = useState<any>(null);
+  const [pendingSales, setPendingSales] = useState<any[]>([]);
+  const [completedSales, setCompletedSales] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
+
+  const totalEarnings = completedSales.reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) return;
+      setUser(session.user);
+
+      const { data: sales } = await supabase
+        .from('sales')
+        .select('*, content:content_id(title)')
+        .eq('creator_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (sales) {
+        setPendingSales(sales.filter(s => s.payment_status === 'pending'));
+        setCompletedSales(sales.filter(s => s.payment_status === 'completed'));
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const markAsPaid = async (saleId: string) => {
+    const { error } = await supabase
+      .from('sales')
+      .update({ payment_status: 'completed' })
+      .eq('id', saleId);
+
+    if (error) {
+      alert('Error: ' + error.message);
+      return;
+    }
+
+    setPendingSales(prev => prev.filter(s => s.id !== saleId));
+    const sale = pendingSales.find(s => s.id === saleId);
+    if (sale) {
+      setCompletedSales(prev => [{ ...sale, payment_status: 'completed' }, ...prev]);
+    }
+  };
 
   return (
     <div className="p-6 md:p-10">
@@ -19,9 +63,59 @@ export default function EarningsPage() {
       {/* Balance */}
       <div className="glass-card rounded-xl p-8 mb-8 text-center">
         <p className="text-sm text-muted mb-2">Balance disponible</p>
-        <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-accent-cyan">$0.00</p>
+        <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-accent-cyan">${totalEarnings.toFixed(2)}</p>
         <p className="text-xs text-muted mt-3">Los pagos se acreditan entre 24-48hs después de solicitar el retiro.</p>
       </div>
+
+      {/* Pending Sales */}
+      {loading ? (
+        <div className="text-center py-8 text-muted">Cargando ventas...</div>
+      ) : pendingSales.length > 0 && (
+        <div className="glass-card rounded-xl p-6 mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="w-5 h-5 text-yellow-400" />
+            <h3 className="text-lg font-bold">Ventas pendientes de verificación</h3>
+            <span className="ml-auto text-sm bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded">{pendingSales.length}</span>
+          </div>
+          <div className="space-y-4">
+            {pendingSales.map(sale => (
+              <div key={sale.id} className="p-4 rounded-xl border border-slate-700/50 bg-dark-light/30">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Mail className="w-4 h-4 text-muted flex-shrink-0" />
+                      <span className="text-sm text-white truncate">{sale.buyer_email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted mb-1">
+                      <span className="text-accent-cyan font-bold">${sale.amount} USD</span>
+                      <span>·</span>
+                      <span>{sale.content?.title || 'Contenido'}</span>
+                      <span>·</span>
+                      <span className="capitalize">{sale.payment_method}</span>
+                    </div>
+                    <p className="text-xs text-muted">{new Date(sale.created_at).toLocaleString('es-AR')}</p>
+                  </div>
+                  <button
+                    onClick={() => markAsPaid(sale.id)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-green-500/10 text-green-400 text-sm font-medium rounded-lg hover:bg-green-500/20 transition-colors flex-shrink-0"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Marcar pagado
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && pendingSales.length === 0 && (
+        <div className="glass-card rounded-xl p-6 mb-8 text-center">
+          <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-3" />
+          <h3 className="font-bold mb-1">No hay ventas pendientes</h3>
+          <p className="text-xs text-muted">Todas las ventas están al día.</p>
+        </div>
+      )}
 
       {/* Withdraw Form */}
       <div className="glass-card rounded-xl p-6 mb-8">
