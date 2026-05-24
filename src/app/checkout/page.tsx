@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Zap, Shield, Mail, Check, Loader2, AlertCircle, FileText } from 'lucide-react';
+import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle } from 'lucide-react';
 
 declare global {
   interface Window { MercadoPago: any; }
@@ -13,26 +13,10 @@ declare global {
 
 const CARD_BRANDS: Record<string, string> = {
   '4': 'visa',
-  '51': 'master',
-  '52': 'master',
-  '53': 'master',
-  '54': 'master',
-  '55': 'master',
-  '34': 'amex',
-  '37': 'amex',
-  '300': 'diners',
-  '301': 'diners',
-  '302': 'diners',
-  '303': 'diners',
-  '304': 'diners',
-  '305': 'diners',
-  '36': 'diners',
-  '38': 'diners',
-  '39': 'diners',
-  '6011': 'discover',
-  '622': 'discover',
-  '64': 'discover',
-  '65': 'discover',
+  '51': 'master', '52': 'master', '53': 'master', '54': 'master', '55': 'master',
+  '34': 'amex', '37': 'amex',
+  '300': 'diners', '301': 'diners', '302': 'diners', '303': 'diners', '304': 'diners', '305': 'diners', '36': 'diners', '38': 'diners', '39': 'diners',
+  '6011': 'discover', '622': 'discover', '64': 'discover', '65': 'discover',
 };
 
 function detectCardBrand(number: string): string {
@@ -43,10 +27,20 @@ function detectCardBrand(number: string): string {
   return 'master';
 }
 
+function formatCardNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+
+function formatExpiry(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length > 2) return digits.slice(0, 2) + '/' + digits.slice(2);
+  return digits;
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [email, setEmail] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
@@ -85,7 +79,8 @@ function CheckoutContent() {
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !cardNumber || !cardExpiry || !cardCvv || !cardName || !docNumber) {
+    const cleanNumber = cardNumber.replace(/\s/g, '');
+    if (!cleanNumber || !cardExpiry || !cardCvv || !cardName || !docNumber) {
       setError('Completá todos los campos');
       return;
     }
@@ -100,7 +95,7 @@ function CheckoutContent() {
       const fullYear = expYear?.length === 2 ? `20${expYear}` : expYear;
 
       const cardToken = await mpInstance.createCardToken({
-        cardNumber: cardNumber.replace(/\s/g, ''),
+        cardNumber: cleanNumber,
         cardExpirationMonth: expMonth || '12',
         cardExpirationYear: fullYear || '2026',
         securityCode: cardCvv,
@@ -110,6 +105,7 @@ function CheckoutContent() {
       });
 
       const brand = detectCardBrand(cardNumber);
+      const guestEmail = `guest-${crypto.randomUUID().slice(0, 8)}@drops.agency`;
 
       const res = await fetch('/api/process-payment', {
         method: 'POST',
@@ -118,7 +114,7 @@ function CheckoutContent() {
           token: cardToken.id,
           payment_method_id: cardToken.payment_method?.id || brand,
           amount: parseFloat(packPrice),
-          buyer_email: email,
+          buyer_email: guestEmail,
           creator_id: creatorId,
           content_id: packId,
           title: packTitle,
@@ -186,13 +182,7 @@ function CheckoutContent() {
 
               <form onSubmit={handlePay}>
                 <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
-                  <h3 className="text-lg font-bold mb-4">1. Email</h3>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="tu@email.com"
-                    className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
-                </div>
-
-                <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
-                  <h3 className="text-lg font-bold mb-4">2. Datos de la tarjeta</h3>
+                  <h3 className="text-lg font-bold mb-4">Datos de la tarjeta</h3>
                   <div className="bg-dark-light/40 border border-slate-700/40 rounded-xl p-4 mb-5 space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-muted">Precio original:</span>
@@ -208,29 +198,29 @@ function CheckoutContent() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-muted mb-2">Número de tarjeta</label>
-                      <input type="text" inputMode="numeric" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} required
+                      <input type="text" inputMode="numeric" value={cardNumber} onChange={(e) => setCardNumber(formatCardNumber(e.target.value))} required
                         placeholder="5031 7557 3453 0604"
-                        className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                        className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors tracking-wider text-lg" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-1">
                         <label className="block text-sm font-medium text-muted mb-2">Vencimiento</label>
-                        <input type="text" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} required
-                          placeholder="MM/AA"
-                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                        <input type="text" inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(formatExpiry(e.target.value))} required
+                          placeholder="MM / AA"
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-center text-lg" />
                       </div>
-                      <div>
+                      <div className="col-span-1">
                         <label className="block text-sm font-medium text-muted mb-2">CVV</label>
-                        <input type="text" inputMode="numeric" value={cardCvv} onChange={(e) => setCardCvv(e.target.value)} required
+                        <input type="text" inputMode="numeric" value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} required
                           placeholder="123"
-                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-center text-lg" />
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted mb-2">Titular</label>
-                      <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} required
-                        placeholder="Como figura en la tarjeta"
-                        className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+                      <div className="col-span-1">
+                        <label className="block text-sm font-medium text-muted mb-2">Titular</label>
+                        <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} required
+                          placeholder="Nombre"
+                          className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-sm" />
+                      </div>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
@@ -244,7 +234,7 @@ function CheckoutContent() {
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-muted mb-2">Número de documento</label>
-                        <input type="text" value={docNumber} onChange={(e) => setDocNumber(e.target.value)} required
+                        <input type="text" inputMode="numeric" value={docNumber} onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, '').slice(0, 20))} required
                           placeholder="12345678"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
                       </div>
@@ -267,7 +257,7 @@ function CheckoutContent() {
               <div className="mt-8 grid grid-cols-3 gap-4">
                 <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Pago express</p></div>
                 <div className="text-center"><Shield className="w-6 h-6 text-green-400 mx-auto mb-2" /><p className="text-xs text-muted">Pago seguro</p></div>
-                <div className="text-center"><Mail className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Contenido automático</p></div>
+                <div className="text-center"><Check className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Contenido automático</p></div>
               </div>
 
               <div className="mt-6 glass-card rounded-xl p-5 text-center">
