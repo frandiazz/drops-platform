@@ -53,11 +53,14 @@ export async function POST(request: Request) {
       };
     }
 
+    const idempotencyKey = crypto.randomUUID();
+
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${mpAccessToken}`,
+        'X-Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify(paymentPayload),
     });
