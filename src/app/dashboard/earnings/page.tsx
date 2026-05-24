@@ -157,34 +157,46 @@ export default function EarningsPage() {
 
       {/* Payment Methods Info */}
       <div className="glass-card rounded-xl p-6">
-        <h3 className="text-lg font-bold mb-6">Métodos de pago aceptados por Drops</h3>
+        <h3 className="text-lg font-bold mb-4">Cómo cobrás tus ventas</h3>
+        <p className="text-xs text-muted mb-4">Tus clientes pagan con tarjeta vía Mercado Pago (ARS). El cobro se acredita en tu cuenta de Mercado Pago. Después podés transferirlo a tu banco.</p>
+
+        <h4 className="text-sm font-semibold text-muted mb-3">Tarjetas aceptadas para cobrar</h4>
+        <div className="flex items-center gap-5 text-slate-400 mb-6">
+          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-dark-light/50">
+            <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#1A1F71"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">VISA</text></svg>
+            <span className="text-[10px]">Visa</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-dark-light/50">
+            <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#EB001B"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">MC</text></svg>
+            <span className="text-[10px]">Mastercard</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-dark-light/50">
+            <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#2E77BC"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">AMEX</text></svg>
+            <span className="text-[10px]">Amex</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-dark-light/50">
+            <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#0066A2"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">DNRS</text></svg>
+            <span className="text-[10px]">Diners</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-dark-light/50">
+            <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#E87E1B"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">DISC</text></svg>
+            <span className="text-[10px]">Discover</span>
+          </div>
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="flex items-start gap-3 p-4 rounded-lg bg-dark-light/50">
             <CreditCard className="w-6 h-6 text-accent-cyan flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold">Tarjeta de crédito/débito</p>
-              <p className="text-xs text-muted">Vía Takenos - Pagos internacionales en USD</p>
+              <p className="text-sm font-semibold">Pago con tarjeta</p>
+              <p className="text-xs text-muted">Visa, Mastercard, Amex, Diners, Discover - nacionales e internacionales</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-4 rounded-lg bg-dark-light/50">
             <Wallet className="w-6 h-6 text-accent-violet flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold">Mercado Pago</p>
-              <p className="text-xs text-muted">Pagos en pesos argentinos</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-dark-light/50">
-            <DollarSign className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold">Transferencia bancaria</p>
-              <p className="text-xs text-muted">Cuenta Lead Bank - USD internacional</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-dark-light/50">
-            <svg className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-.5-13H11v6l5.25 3.15-.75 1.23L10 14.5V7z"/></svg>
-            <div>
-              <p className="text-sm font-semibold">Criptomonedas</p>
-              <p className="text-xs text-muted">USDT en red TRC20</p>
+              <p className="text-sm font-semibold">Retiro a Mercado Pago</p>
+              <p className="text-xs text-muted">Recibí los ARS en tu cuenta de Mercado Pago y transferí a tu banco</p>
             </div>
           </div>
         </div>

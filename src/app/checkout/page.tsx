@@ -269,6 +269,33 @@ function CheckoutContent() {
                 <div className="text-center"><Shield className="w-6 h-6 text-green-400 mx-auto mb-2" /><p className="text-xs text-muted">Pago seguro</p></div>
                 <div className="text-center"><Mail className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Contenido automático</p></div>
               </div>
+
+              <div className="mt-6 glass-card rounded-xl p-5 text-center">
+                <p className="text-xs font-semibold text-muted mb-3">Tarjetas aceptadas</p>
+                <div className="flex items-center justify-center gap-5 text-slate-400">
+                  <div className="flex flex-col items-center gap-1">
+                    <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#1A1F71"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">VISA</text></svg>
+                    <span className="text-[10px]">Visa</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#EB001B"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">MC</text></svg>
+                    <span className="text-[10px]">Mastercard</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#2E77BC"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">AMEX</text></svg>
+                    <span className="text-[10px]">Amex</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#0066A2"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">DNRS</text></svg>
+                    <span className="text-[10px]">Diners</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#E87E1B"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="6" fontWeight="bold">DISC</text></svg>
+                    <span className="text-[10px]">Discover</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-600 mt-3">Aceptamos tarjetas nacionales e internacionales</p>
+              </div>
             </div>
           </div>
         </div>
