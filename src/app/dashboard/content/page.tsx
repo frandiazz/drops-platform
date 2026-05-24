@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Trash2, Plus, X } from 'lucide-react';
+import { Upload, Image as ImageIcon, Trash2, Plus, X, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function ContentPage() {
@@ -16,6 +16,8 @@ export default function ContentPage() {
   const [telegramLink, setTelegramLink] = useState('');
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingPack, setEditingPack] = useState<any>(null);
+  const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -69,31 +71,63 @@ export default function ContentPage() {
     if (files) Array.from(files).forEach(handleFileUpload);
   };
 
+  const loadPacks = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('content')
+      .select('*')
+      .eq('creator_id', user.id)
+      .order('created_at', { ascending: false });
+    if (data) setPacks(data);
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setPrice('25');
+    setDeliveryType('download');
+    setTelegramLink('');
+    setUploadedUrls([]);
+    setIsActive(true);
+    setEditingPack(null);
+  };
+
+  const openNewForm = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const openEditForm = (pack: any) => {
+    setEditingPack(pack);
+    setTitle(pack.title);
+    setDescription(pack.description || '');
+    setPrice(pack.price.toString());
+    setDeliveryType(pack.delivery_type || 'download');
+    setTelegramLink(pack.telegram_link || '');
+    setUploadedUrls(pack.media_urls || []);
+    setIsActive(pack.is_active !== false);
+    setShowForm(true);
+  };
+
   const handleSave = async () => {
     if (!user) return;
-    const { error } = await supabase.from('content').insert({
-      creator_id: user.id,
+    const payload = {
       title,
       description,
       price: parseFloat(price),
       media_urls: uploadedUrls,
       delivery_type: deliveryType,
       telegram_link: telegramLink || null,
-    });
-    if (!error) {
-      const { data } = await supabase
-        .from('content')
-        .select('*')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false });
-      if (data) setPacks(data);
+      is_active: isActive,
+    };
+    if (editingPack) {
+      await supabase.from('content').update(payload).eq('id', editingPack.id);
+    } else {
+      await supabase.from('content').insert({ ...payload, creator_id: user.id });
     }
+    await loadPacks();
     setShowForm(false);
-    setTitle('');
-    setDescription('');
-    setPrice('25');
-    setUploadedUrls([]);
-    setTelegramLink('');
+    resetForm();
   };
 
   return (
@@ -106,7 +140,7 @@ export default function ContentPage() {
           <p className="text-muted mt-1">Subí tus packs de contenido para que tus fans puedan comprarlos.</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openNewForm}
           className="px-4 py-2.5 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
@@ -119,8 +153,8 @@ export default function ContentPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass-card rounded-2xl p-6 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Nuevo pack de contenido</h2>
-              <button onClick={() => setShowForm(false)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
+              <h2 className="text-xl font-bold">{editingPack ? 'Editar pack' : 'Nuevo pack de contenido'}</h2>
+              <button onClick={() => { setShowForm(false); resetForm(); }} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -170,6 +204,17 @@ export default function ContentPage() {
                     <option value="both">Ambos</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsActive(!isActive)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-slate-600'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isActive ? 'translate-x-5' : ''}`} />
+                </button>
+                <span className="text-sm text-muted">{isActive ? 'Activo' : 'Inactivo'}</span>
               </div>
 
               {deliveryType !== 'download' && (
@@ -260,6 +305,9 @@ export default function ContentPage() {
                 <div className="text-right flex-shrink-0">
                   <p className="text-sm font-bold text-accent-cyan">${pack.price}</p>
                   <p className="text-xs text-muted">{pack.is_active ? 'Activo' : 'Inactivo'}</p>
+                  <button onClick={() => openEditForm(pack)} className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">
+                    <Pencil className="w-3 h-3" /> Editar
+                  </button>
                 </div>
               </div>
             ))}
