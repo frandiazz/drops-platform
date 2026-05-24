@@ -53,6 +53,23 @@ export async function POST(request: Request) {
       };
     }
 
+    // Convert USD to ARS
+    let rate = 1200;
+    try {
+      const rateRes = await fetch('https://dolarapi.com/v1/dolares');
+      const rateData = await rateRes.json();
+      if (Array.isArray(rateData)) {
+        const oficial = rateData.find((d: any) => d.casa === 'oficial');
+        const blue = rateData.find((d: any) => d.casa === 'blue');
+        rate = Number(oficial?.venta || blue?.venta || 1200);
+      }
+    } catch {}
+
+    const amountARS = Math.round(Number(amount) * rate);
+
+    paymentPayload.transaction_amount = amountARS;
+    paymentPayload.currency_id = 'ARS';
+
     const idempotencyKey = crypto.randomUUID();
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {

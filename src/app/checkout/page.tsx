@@ -55,6 +55,7 @@ function CheckoutContent() {
   const [docNumber, setDocNumber] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [arsRate, setArsRate] = useState<number>(1200);
   const [mpReady, setMpReady] = useState(false);
   const [mpInstance, setMpInstance] = useState<any>(null);
 
@@ -64,6 +65,7 @@ function CheckoutContent() {
   const packId = searchParams.get('packId') || '';
 
   useEffect(() => {
+    fetch('/api/rate').then(r => r.json()).then(d => setArsRate(d.rate)).catch(() => {});
     const load = async () => {
       if (typeof window.MercadoPago !== 'undefined') {
         setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
@@ -159,6 +161,9 @@ function CheckoutContent() {
                   <span className="text-3xl font-black text-accent-cyan">${packPrice}</span>
                   <span className="text-xs text-muted">USD</span>
                 </div>
+                <p className="text-xs text-slate-500 text-right -mt-2 mb-4">
+                  ≈ ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                </p>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato</span></div>
                   <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro</span></div>
@@ -188,7 +193,17 @@ function CheckoutContent() {
 
                 <div className="glass-card rounded-2xl p-6 sm:p-8 mb-6">
                   <h3 className="text-lg font-bold mb-4">2. Datos de la tarjeta</h3>
-                  <p className="text-xs text-muted mb-4">Total: <span className="text-white font-bold">${packPrice} USD</span></p>
+                  <div className="bg-dark-light/40 border border-slate-700/40 rounded-xl p-4 mb-5 space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Precio original:</span>
+                      <span className="text-white font-bold">${packPrice} USD</span>
+                    </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted">Pagás en ARS (tasa del día):</span>
+                        <span className="text-accent-cyan font-bold">ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                      </div>
+                    <p className="text-[10px] text-slate-600 pt-1 border-t border-slate-700/30">Tu tarjeta emitida en el exterior convertirá automáticamente. Recibís el contenido al instante.</p>
+                  </div>
 
                   <div className="space-y-4">
                     <div>
@@ -243,7 +258,7 @@ function CheckoutContent() {
                     ) : !mpReady ? (
                       <><Loader2 className="w-5 h-5 animate-spin" /> Inicializando pago...</>
                     ) : (
-                      <><CreditCard className="w-5 h-5" /> Pagar ${packPrice} USD</>
+                      <><CreditCard className="w-5 h-5" /> Pagar ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</>
                     )}
                   </button>
                 </div>
