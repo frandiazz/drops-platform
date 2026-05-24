@@ -18,6 +18,8 @@ export default function ContentPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingPack, setEditingPack] = useState<any>(null);
   const [isActive, setIsActive] = useState(true);
+  const [contentType, setContentType] = useState<'one_time' | 'subscription'>('one_time');
+  const [subscriptionPrice, setSubscriptionPrice] = useState('25');
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -89,6 +91,8 @@ export default function ContentPage() {
     setTelegramLink('');
     setUploadedUrls([]);
     setIsActive(true);
+    setContentType('one_time');
+    setSubscriptionPrice('25');
     setEditingPack(null);
   };
 
@@ -106,20 +110,31 @@ export default function ContentPage() {
     setTelegramLink(pack.telegram_link || '');
     setUploadedUrls(pack.media_urls || []);
     setIsActive(pack.is_active !== false);
+    setContentType(pack.type || 'one_time');
+    setSubscriptionPrice(pack.subscription_price?.toString() || pack.price.toString());
     setShowForm(true);
   };
 
   const handleSave = async () => {
     if (!user) return;
-    const payload = {
+    const payload: any = {
       title,
       description,
-      price: parseFloat(price),
+      price: contentType === 'one_time' ? parseFloat(price) : 0,
       media_urls: uploadedUrls,
       delivery_type: deliveryType,
       telegram_link: telegramLink || null,
       is_active: isActive,
+      type: contentType,
+      subscription_price: contentType === 'subscription' ? parseFloat(subscriptionPrice) : null,
     };
+    if (contentType === 'one_time') {
+      payload.price = parseFloat(price);
+      payload.subscription_price = null;
+    } else {
+      payload.price = 0;
+      payload.subscription_price = parseFloat(subscriptionPrice);
+    }
     if (editingPack) {
       await supabase.from('content').update(payload).eq('id', editingPack.id);
     } else {
@@ -182,16 +197,57 @@ export default function ContentPage() {
                 />
               </div>
 
+              {/* Type toggle */}
+              <div>
+                <label className="block text-sm font-medium text-muted mb-2">Tipo de pack</label>
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-dark-light/60 border border-slate-700/50">
+                  <button
+                    type="button"
+                    onClick={() => { setContentType('one_time'); if (price === '0') setPrice('25'); }}
+                    className={`py-2.5 px-4 rounded-md text-sm font-medium transition-all ${contentType === 'one_time' ? 'bg-accent-violet text-white' : 'text-muted hover:text-white'}`}
+                  >
+                    Pago único
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setContentType('subscription'); if (subscriptionPrice === '25') setSubscriptionPrice('9.99'); }}
+                    className={`py-2.5 px-4 rounded-md text-sm font-medium transition-all ${contentType === 'subscription' ? 'bg-accent-cyan text-white' : 'text-muted hover:text-white'}`}
+                  >
+                    Suscripción mensual
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Precio (USD)</label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none"
-                  />
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    {contentType === 'one_time' ? 'Precio (USD)' : 'Precio único (USD)'}
+                  </label>
+                  {contentType === 'one_time' ? (
+                    <input
+                      type="number"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none"
+                    />
+                  ) : (
+                    <div className="w-full h-12 rounded-lg bg-dark-light/40 border border-slate-700/30 px-4 flex items-center text-muted text-sm">
+                      Sin precio único (suscripción)
+                    </div>
+                  )}
                 </div>
+                {contentType === 'subscription' && (
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-2">Precio mensual (USD)</label>
+                    <input
+                      type="number"
+                      value={subscriptionPrice}
+                      onChange={(e) => setSubscriptionPrice(e.target.value)}
+                      className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-cyan focus:outline-none"
+                      placeholder="9.99"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-muted mb-2">Tipo de entrega</label>
                   <select
@@ -301,9 +357,14 @@ export default function ContentPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{pack.title}</p>
                   <p className="text-xs text-muted truncate">{pack.description || 'Sin descripción'}</p>
+                  <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded ${pack.type === 'subscription' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-violet-500/10 text-violet-400'}`}>
+                    {pack.type === 'subscription' ? `Suscripción $${pack.subscription_price}/mes` : 'Pago único'}
+                  </span>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-accent-cyan">${pack.price}</p>
+                  <p className="text-sm font-bold text-accent-cyan">
+                    {pack.type === 'subscription' ? `$${pack.subscription_price}/mes` : `$${pack.price}`}
+                  </p>
                   <p className="text-xs text-muted">{pack.is_active ? 'Activo' : 'Inactivo'}</p>
                   <button onClick={() => openEditForm(pack)} className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">
                     <Pencil className="w-3 h-3" /> Editar

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = JSON.parse(await request.text());
     const { type, data } = body;
 
     if (type === 'payment' && data?.id) {
@@ -22,10 +22,36 @@ export async function POST(request: Request) {
       });
       const payment = await mpRes.json();
 
-      if (payment.status === 'approved' && payment.metadata?.sale_id) {
-        await supabase.from('sales')
-          .update({ payment_status: 'completed', mp_payment_id: payment.id?.toString() })
-          .eq('id', payment.metadata.sale_id);
+      if (payment.status === 'approved') {
+        const saleId = payment.metadata?.sale_id;
+        const subId = payment.metadata?.subscription_id;
+        const content_type = payment.metadata?.content_type;
+
+        if (saleId) {
+          await supabase.from('sales')
+            .update({ payment_status: 'completed', mp_payment_id: payment.id?.toString() })
+            .eq('id', saleId);
+        }
+
+        if (subId) {
+          await supabase.from('subscriptions')
+            .update({ status: 'active' })
+            .eq('id', subId);
+        }
+
+        // Fallback: find sale by mp_payment_id
+        if (!saleId) {
+          const { data: sale } = await supabase.from('sales')
+            .select('id, content_id')
+            .eq('mp_payment_id', payment.id?.toString())
+            .maybeSingle();
+
+          if (sale) {
+            await supabase.from('sales')
+              .update({ payment_status: 'completed' })
+              .eq('id', sale.id);
+          }
+        }
       }
     }
 

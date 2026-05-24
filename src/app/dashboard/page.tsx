@@ -4,23 +4,57 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { TrendingUp, Users, DollarSign, Package, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Package, ArrowUpRight, Repeat } from 'lucide-react';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
+  const [statsData, setStatsData] = useState({ earnings: 0, sales: 0, content: 0, buyers: 0, subscribers: 0 });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setUser(session.user);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) return;
+      setUser(session.user);
+      const uid = session.user.id;
+
+      const [salesRes, contentRes] = await Promise.all([
+        supabase.from('sales').select('*').eq('creator_id', uid),
+        supabase.from('content').select('id', { count: 'exact', head: true }).eq('creator_id', uid),
+      ]);
+
+      const completedSales = (salesRes.data || []).filter((s: any) => s.payment_status === 'completed');
+      const totalEarnings = completedSales.reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
+      const uniqueBuyers = new Set(completedSales.map((s: any) => s.buyer_email)).size;
+
+      let subscribers = 0;
+      try {
+        const { count } = await supabase
+          .from('subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('creator_id', uid)
+          .eq('status', 'active');
+        subscribers = count || 0;
+      } catch {}
+
+      setStatsData({
+        earnings: totalEarnings,
+        sales: completedSales.length,
+        content: contentRes.count || 0,
+        buyers: uniqueBuyers,
+        subscribers,
+      });
     });
   }, []);
 
   const stats = [
-    { label: 'Ganancias este mes', value: '$0.00', icon: DollarSign, color: 'text-green-400', bg: 'bg-green-500/10' },
-    { label: 'Ventas totales', value: '0', icon: TrendingUp, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
-    { label: 'Contenido subido', value: '0', icon: Package, color: 'text-accent-violet', bg: 'bg-accent-violet/10' },
-    { label: 'Compradores únicos', value: '0', icon: Users, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { label: 'Ganancias totales', value: `$${statsData.earnings.toFixed(2)}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-500/10' },
+    { label: 'Ventas completadas', value: statsData.sales.toString(), icon: TrendingUp, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
+    { label: 'Contenido subido', value: statsData.content.toString(), icon: Package, color: 'text-accent-violet', bg: 'bg-accent-violet/10' },
+    { label: 'Compradores únicos', value: statsData.buyers.toString(), icon: Users, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   ];
+
+  if (statsData.subscribers > 0) {
+    stats.push({ label: 'Suscriptores activos', value: statsData.subscribers.toString(), icon: Repeat, color: 'text-cyan-400', bg: 'bg-cyan-500/10' });
+  }
 
   return (
     <div className="p-6 md:p-10">

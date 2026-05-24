@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Droplets } from 'lucide-react';
+import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Droplets, Repeat } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

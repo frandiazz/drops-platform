@@ -150,12 +150,22 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                   <h3 className="font-bold mb-1">{pack.title}</h3>
                   <p className="text-xs text-muted mb-4">{pack.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xl font-black text-accent-cyan">${pack.price}</span>
+                    <div>
+                      <span className="text-xl font-black text-accent-cyan">
+                        {pack.type === 'subscription' ? `$${pack.subscription_price}` : `$${pack.price}`}
+                      </span>
+                      <span className="text-xs text-muted ml-1">
+                        {pack.type === 'subscription' ? '/mes' : 'USD'}
+                      </span>
+                      {pack.type === 'subscription' && (
+                        <div className="text-[10px] text-cyan-400 font-semibold">Suscripción mensual</div>
+                      )}
+                    </div>
                     <Link
-                      href={`/checkout?creatorId=${params.creatorId}&packId=${pack.id}&price=${pack.price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}`}
+                      href={`/checkout?creatorId=${params.creatorId}&packId=${pack.id}&price=${pack.type === 'subscription' ? pack.subscription_price : pack.price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}&type=${pack.type || 'one_time'}&subscriptionPrice=${pack.subscription_price || ''}`}
                       className="px-4 py-2 bg-accent-violet text-white text-sm font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-1"
                     >
-                      Comprar
+                      {pack.type === 'subscription' ? 'Suscribirse' : 'Comprar'}
                       <ExternalLink className="w-4 h-4" />
                     </Link>
                   </div>

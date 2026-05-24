@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle, Lock, User } from 'lucide-react';
+import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle, Lock, User, Repeat } from 'lucide-react';
 
 declare global {
   interface Window { MercadoPago: any; }
@@ -59,6 +59,9 @@ function CheckoutContent() {
   const packId = searchParams.get('packId') || '';
   const creatorName = searchParams.get('creator') || '';
   const creatorAvatar = searchParams.get('avatar') || '';
+  const packType = searchParams.get('type') || 'one_time';
+  const packSubPrice = searchParams.get('subscriptionPrice') || '9.99';
+  const displayPrice = packType === 'subscription' ? packSubPrice : packPrice;
 
   useEffect(() => {
     fetch('/api/rate').then(r => r.json()).then(d => setArsRate(d.rate)).catch(() => {});
@@ -115,12 +118,13 @@ function CheckoutContent() {
         body: JSON.stringify({
           token: cardToken.id,
           payment_method_id: cardToken.payment_method?.id || brand,
-          amount: parseFloat(packPrice),
+          amount: parseFloat(displayPrice),
           buyer_email: guestEmail,
           creator_id: creatorId,
           content_id: packId,
           title: packTitle,
           identification: { type: docType, number: docNumber },
+          content_type: packType,
         }),
       });
 
@@ -175,16 +179,25 @@ function CheckoutContent() {
                 <h2 className="text-xl font-bold">{packTitle}</h2>
                 <p className="text-xs text-muted">Contenido exclusivo en Drops</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black text-accent-cyan">${packPrice}</span>
-                  <span className="text-xs text-muted">USD</span>
+                  <span className="text-3xl font-black text-accent-cyan">${displayPrice}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted">USD</span>
+                    {packType === 'subscription' && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400">/mes</span>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-slate-500 text-right -mt-2">
-                  ≈ ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  ≈ ARS $ {(parseFloat(displayPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                 </p>
 
                 {/* Trust badges */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato al pagar</span></div>
+                  {packType === 'subscription' ? (
+                    <div className="flex items-center gap-2 text-sm text-muted"><Repeat className="w-4 h-4 text-cyan-400" /><span>Se renueva automáticamente cada mes</span></div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato al pagar</span></div>
+                  )}
                   <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro · Solo tarjeta</span></div>
                   <div className="flex items-center gap-2 text-sm text-muted"><Lock className="w-4 h-4 text-green-400" /><span>Pago 100% seguro</span></div>
                 </div>
@@ -217,12 +230,12 @@ function CheckoutContent() {
                   <h3 className="text-lg font-bold mb-4">Datos de la tarjeta</h3>
                   <div className="bg-dark-light/40 border border-slate-700/40 rounded-xl p-4 mb-5 space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted">Precio original:</span>
-                      <span className="text-white font-bold">${packPrice} USD</span>
+                      <span className="text-muted">{packType === 'subscription' ? 'Precio mensual:' : 'Precio:'}</span>
+                      <span className="text-white font-bold">${displayPrice} USD{packType === 'subscription' ? ' /mes' : ''}</span>
                     </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted">Pagás en ARS (tasa del día):</span>
-                        <span className="text-accent-cyan font-bold">ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                        <span className="text-accent-cyan font-bold">ARS $ {(parseFloat(displayPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
                       </div>
                     <p className="text-[10px] text-slate-600 pt-1 border-t border-slate-700/30">Tu tarjeta emitida en el exterior convertirá automáticamente. Recibís el contenido al instante.</p>
                   </div>
@@ -280,7 +293,7 @@ function CheckoutContent() {
                     ) : !mpReady ? (
                       <><Loader2 className="w-5 h-5 animate-spin" /> Inicializando pago...</>
                     ) : (
-                      <><CreditCard className="w-5 h-5" /> Pagar ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</>
+                      <><CreditCard className="w-5 h-5" /> Pagar ARS $ {(parseFloat(displayPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}{packType === 'subscription' ? ' /mes' : ''}</>
                     )}
                   </button>
 

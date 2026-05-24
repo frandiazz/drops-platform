@@ -5,17 +5,67 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, Clock, XCircle, Download, Send, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, Download, Send, Image as ImageIcon, Repeat } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 export default function AccessPage({ params }: { params: { token: string } }) {
   const [sale, setSale] = useState<any>(null);
   const [content, setContent] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchSale = async () => {
+    const fetchData = async () => {
+      // Try subscription first
+      const { data: subData, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('access_token', params.token)
+        .maybeSingle();
+
+      if (subData) {
+        setSubscription(subData);
+
+        // If pending, try to find linked sale and verify
+        if (subData.status === 'pending') {
+          const { data: linkedSale } = await supabase
+            .from('sales')
+            .select('*')
+            .eq('buyer_email', subData.buyer_email)
+            .eq('content_id', subData.content_id)
+            .eq('payment_status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (linkedSale) {
+            try {
+              const res = await fetch(`/api/verify-payment?sale_id=${linkedSale.id}`);
+              const result = await res.json();
+              if (result.success) {
+                linkedSale.payment_status = 'completed';
+                await supabase.from('subscriptions').update({ status: 'active' }).eq('id', subData.id);
+                subData.status = 'active';
+              }
+            } catch {}
+          }
+        }
+
+        setSale(subData);
+        if (subData.content_id) {
+          const { data: contentData } = await supabase
+            .from('content')
+            .select('*')
+            .eq('id', subData.content_id)
+            .maybeSingle();
+          if (contentData) setContent(contentData);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Fallback to sale (backward compat)
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
         .select('*')
@@ -52,7 +102,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
 
       setLoading(false);
     };
-    fetchSale();
+    fetchData();
   }, [params.token]);
 
   if (loading) {
@@ -84,7 +134,8 @@ export default function AccessPage({ params }: { params: { token: string } }) {
     );
   }
 
-  const isCompleted = sale.payment_status === 'completed';
+  const isCompleted = subscription ? subscription.status === 'active' : sale?.payment_status === 'completed';
+  const status = subscription ? subscription.status : sale?.payment_status;
 
   if (!isCompleted) {
     return (
@@ -96,8 +147,8 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <h1 className="text-2xl font-bold mb-2">Pago pendiente</h1>
             <p className="text-muted mb-4">Estamos esperando la confirmación de tu pago.</p>
             <div className="glass-card rounded-xl p-4 mb-6">
-              <p className="text-xs text-muted">Email: <span className="text-white">{sale.buyer_email}</span></p>
-              <p className="text-xs text-muted mt-1">Monto: <span className="text-accent-cyan font-bold">${sale.amount} USD</span></p>
+              <p className="text-xs text-muted">Email: <span className="text-white">{sale?.buyer_email}</span></p>
+              <p className="text-xs text-muted mt-1">Monto: <span className="text-accent-cyan font-bold">${sale?.amount} USD</span></p>
             </div>
             <p className="text-xs text-muted">Si ya pagaste, refrescá la página o esperá unos segundos.</p>
           </div>
@@ -117,8 +168,20 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
               ¡Contenido <span className="gradient-text">disponible</span>!
             </h1>
-            <p className="text-muted">Gracias por tu compra, {sale.buyer_email}</p>
+            <p className="text-muted">Gracias por tu compra, {sale?.buyer_email}</p>
           </div>
+
+          {subscription && subscription.status === 'active' && (
+            <div className="glass-card rounded-xl p-4 mb-6 flex items-center gap-3 bg-cyan-500/10 border border-cyan-500/30">
+              <Repeat className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-cyan-400">Suscripción activa</p>
+                <p className="text-xs text-muted">
+                  Vigente hasta {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          )}
 
           {content && (
             <div className="glass-card rounded-2xl p-6 sm:p-8 mb-8">
@@ -174,7 +237,14 @@ export default function AccessPage({ params }: { params: { token: string } }) {
           )}
 
           <div className="glass-card rounded-xl p-6 text-center">
-            <p className="text-xs text-muted mb-2">Compra realizada el {new Date(sale.created_at).toLocaleDateString('es-AR')}</p>
+            <p className="text-xs text-muted mb-2">
+              {subscription ? 'Suscripción iniciada el' : 'Compra realizada el'} {new Date(sale?.created_at).toLocaleDateString('es-AR')}
+            </p>
+            {subscription && (
+              <p className="text-xs text-muted mb-1">
+                Próximo vencimiento: {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            )}
             <p className="text-xs text-muted">¿Dudas? Escribinos a DropsDrops2005@gmail.com</p>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = JSON.parse(await request.text());
-    const { token, payment_method_id, amount, buyer_email, creator_id, content_id, title, identification } = body;
+    const { token, payment_method_id, amount, buyer_email, creator_id, content_id, title, identification, content_type } = body;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,6 +37,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: saleError?.message || 'Failed to create sale' }, { status: 500 });
     }
 
+    let subscription = null;
+    if (content_type === 'subscription') {
+      const { data: sub, error: subError } = await supabase.from('subscriptions').insert({
+        creator_id,
+        content_id,
+        buyer_email,
+        amount,
+        status: 'pending',
+      }).select().single();
+
+      if (subError) {
+        console.error('Failed to create subscription:', subError);
+      } else {
+        subscription = sub;
+      }
+    }
+
     const paymentPayload: any = {
       token,
       transaction_amount: Number(amount),
@@ -44,6 +61,11 @@ export async function POST(request: Request) {
       installments: 1,
       payment_method_id: payment_method_id || 'master',
       payer: { email: buyer_email },
+      metadata: {
+        sale_id: sale.id,
+        content_type: content_type || 'one_time',
+        ...(subscription ? { subscription_id: subscription.id } : {}),
+      },
     };
 
     if (identification?.number) {
@@ -88,6 +110,14 @@ export async function POST(request: Request) {
       await supabase.from('sales')
         .update({ payment_status: 'completed', mp_payment_id: mpData.id?.toString() })
         .eq('id', sale.id);
+
+      if (subscription) {
+        await supabase.from('subscriptions')
+          .update({ status: 'active' })
+          .eq('id', subscription.id);
+
+        return NextResponse.json({ success: true, access_token: subscription.access_token, payment_id: mpData.id });
+      }
 
       return NextResponse.json({ success: true, access_token: sale.access_token, payment_id: mpData.id });
     }

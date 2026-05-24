@@ -28,14 +28,22 @@ export async function GET(request: NextRequest) {
       const payment = await mpRes.json();
 
       if (payment.status === 'approved') {
-        await supabase.from('sales')
-          .update({ payment_status: 'completed', mp_payment_id: paymentId })
-          .eq('mp_payment_id', paymentId);
+        const targetSaleId = payment.metadata?.sale_id;
 
-        if (payment.metadata?.sale_id) {
+        if (targetSaleId) {
           await supabase.from('sales')
             .update({ payment_status: 'completed', mp_payment_id: paymentId })
-            .eq('id', payment.metadata.sale_id);
+            .eq('id', targetSaleId);
+        } else {
+          await supabase.from('sales')
+            .update({ payment_status: 'completed', mp_payment_id: paymentId })
+            .eq('mp_payment_id', paymentId);
+        }
+
+        if (payment.metadata?.subscription_id) {
+          await supabase.from('subscriptions')
+            .update({ status: 'active' })
+            .eq('id', payment.metadata.subscription_id);
         }
 
         return NextResponse.json({ success: true, status: 'completed' });
@@ -61,6 +69,25 @@ export async function GET(request: NextRequest) {
           await supabase.from('sales')
             .update({ payment_status: 'completed' })
             .eq('id', saleId);
+
+          const { data: updatedSale } = await supabase.from('sales')
+            .select('*')
+            .eq('id', saleId)
+            .single();
+
+          if (updatedSale) {
+            const { data: subscriptions } = await supabase.from('subscriptions')
+              .select('id')
+              .eq('buyer_email', updatedSale.buyer_email)
+              .eq('content_id', updatedSale.content_id)
+              .eq('status', 'pending');
+
+            if (subscriptions && subscriptions.length > 0) {
+              await supabase.from('subscriptions')
+                .update({ status: 'active' })
+                .in('id', subscriptions.map((s: any) => s.id));
+            }
+          }
 
           return NextResponse.json({ success: true, status: 'completed' });
         }
