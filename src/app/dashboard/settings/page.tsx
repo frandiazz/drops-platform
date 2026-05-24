@@ -1,29 +1,75 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User, Mail, Shield, Save } from 'lucide-react';
+import { User, Mail, Save, Camera, Link as LinkIcon, Instagram, Music2, Twitter, Globe, Shield } from 'lucide-react';
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [stageName, setStageName] = useState('');
+  const [bio, setBio] = useState('');
   const [socials, setSocials] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [tiktok, setTiktok] = useState('');
+  const [twitter, setTwitter] = useState('');
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const userId = user?.id;
+  const profileUrl = userId ? `https://drops-ly.vercel.app/c/${userId}` : '';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
-        setStageName(session.user.user_metadata?.stage_name || '');
-        setSocials(session.user.user_metadata?.socials || '');
+        const m = session.user.user_metadata || {};
+        setStageName(m.stage_name || '');
+        setBio(m.bio || '');
+        setSocials(m.socials || '');
+        setAvatarUrl(m.avatar_url || '');
+        setInstagram(m.instagram || '');
+        setTiktok(m.tiktok || '');
+        setTwitter(m.twitter || '');
       }
     });
   }, []);
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: reader.result }),
+        });
+        const data = await res.json();
+        if (data.url) setAvatarUrl(data.url);
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async () => {
-    await supabase.auth.updateUser({
-      data: { stage_name: stageName, socials },
-    });
+    const metadata = {
+      stage_name: stageName,
+      bio,
+      socials,
+      avatar_url: avatarUrl,
+      instagram,
+      tiktok,
+      twitter,
+    };
+
+    await supabase.auth.updateUser({ data: metadata });
 
     if (user) {
       await supabase.from('profiles').upsert({
@@ -45,46 +91,148 @@ export default function SettingsPage() {
         <h1 className="text-2xl md:text-3xl font-extrabold">
           <span className="gradient-text">Configuración</span>
         </h1>
-        <p className="text-muted mt-1">Gestioná tu perfil y preferencias.</p>
+        <p className="text-muted mt-1">Personalizá tu perfil público de Drops.</p>
       </div>
 
       <div className="space-y-6 max-w-2xl">
+
+        {/* Avatar */}
+        <div className="glass-card rounded-xl p-6">
+          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+            <Camera className="w-5 h-5 text-accent-violet" />
+            Foto de perfil
+          </h3>
+          <div className="flex items-center gap-6">
+            <div className="relative w-20 h-20 rounded-full overflow-hidden bg-dark-light/80 border border-slate-700/50 flex-shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-muted">
+                  {stageName?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
+              {uploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xs text-white">Subiendo...</div>}
+            </div>
+            <div>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="px-4 py-2 bg-accent-violet/20 text-accent-violet rounded-lg hover:bg-accent-violet/30 transition-colors text-sm font-medium"
+              >
+                {avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+              </button>
+              <p className="text-xs text-muted mt-2">Recomendado: cuadrado, 512x512px</p>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+            </div>
+          </div>
+        </div>
+
         {/* Profile */}
         <div className="glass-card rounded-xl p-6">
           <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
             <User className="w-5 h-5 text-accent-violet" />
-            Perfil
+            Perfil público
           </h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-muted mb-2">Email</label>
-              <div className="flex items-center gap-2 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-muted">
+              <div className="flex items-center gap-2 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-muted text-sm">
                 <Mail className="w-4 h-4" />
                 <span>{user?.email}</span>
               </div>
             </div>
+
+            {profileUrl && (
+              <div>
+                <label className="block text-sm font-medium text-muted mb-2">Tu link de perfil</label>
+                <div className="flex items-center gap-2 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-sm">
+                  <LinkIcon className="w-4 h-4 text-accent-cyan" />
+                  <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-accent-cyan hover:underline truncate">{profileUrl}</a>
+                </div>
+              </div>
+            )}
+
             <div>
-              <label htmlFor="stageName" className="block text-sm font-medium text-muted mb-2">Nombre artístico</label>
+              <label htmlFor="stageName" className="block text-sm font-medium text-muted mb-2">Nombre / Apodo</label>
               <input
                 id="stageName"
                 type="text"
                 value={stageName}
                 onChange={(e) => setStageName(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
-                placeholder="Tu nombre artístico"
+                placeholder="Ej: Fran Drops"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="bio" className="block text-sm font-medium text-muted mb-2">Biografía</label>
+              <textarea
+                id="bio"
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="w-full rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 py-3 text-white focus:border-accent-violet focus:outline-none transition-colors resize-none"
+                placeholder="Contá quién sos y qué contenido creás..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="glass-card rounded-xl p-6">
+          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-accent-cyan" />
+            Redes sociales
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-muted mb-2 flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-pink-400" /> Instagram
+              </label>
+              <input
+                type="text"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
+                placeholder="@tuusuario"
               />
             </div>
             <div>
-              <label htmlFor="socials" className="block text-sm font-medium text-muted mb-2">Redes sociales</label>
+              <label className="block text-sm font-medium text-muted mb-2 flex items-center gap-2">
+                <Music2 className="w-4 h-4 text-pink-400" /> TikTok
+              </label>
+              <input
+                type="text"
+                value={tiktok}
+                onChange={(e) => setTiktok(e.target.value)}
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
+                placeholder="@tuusuario"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted mb-2 flex items-center gap-2">
+                <Twitter className="w-4 h-4 text-sky-400" /> X / Twitter
+              </label>
+              <input
+                type="text"
+                value={twitter}
+                onChange={(e) => setTwitter(e.target.value)}
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
+                placeholder="@tuusuario"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-slate-700/30">
+              <label htmlFor="socials" className="block text-sm font-medium text-muted mb-2">Otras redes (formato libre)</label>
               <textarea
                 id="socials"
-                rows={3}
+                rows={2}
                 value={socials}
                 onChange={(e) => setSocials(e.target.value)}
                 className="w-full rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 py-3 text-white focus:border-accent-violet focus:outline-none transition-colors resize-none"
-                placeholder="Instagram: @tuusuario&#10;TikTok: @tuusuario"
+                placeholder="OnlyFans: @tuusuario"
               />
             </div>
+
             <button
               onClick={handleSave}
               className="px-6 py-3 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-2"
@@ -92,6 +240,30 @@ export default function SettingsPage() {
               <Save className="w-5 h-5" />
               {saved ? 'Guardado!' : 'Guardar cambios'}
             </button>
+          </div>
+        </div>
+
+        {/* Public URL Preview */}
+        <div className="glass-card rounded-xl p-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <LinkIcon className="w-5 h-5 text-green-400" />
+            Vista previa de tu perfil
+          </h3>
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-dark-light/50">
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-dark-light/80 flex-shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted">{stageName?.charAt(0)?.toUpperCase() || '?'}</div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{stageName || 'Tu nombre'}</p>
+              <p className="text-xs text-muted truncate">{bio || 'Tu biografía'}</p>
+            </div>
+            <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-accent-cyan hover:underline flex items-center gap-1 flex-shrink-0">
+              Ver perfil <LinkIcon className="w-3 h-3" />
+            </a>
           </div>
         </div>
 
@@ -135,3 +307,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+

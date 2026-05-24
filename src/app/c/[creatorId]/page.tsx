@@ -13,31 +13,23 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const loadData = async () => {
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', params.creatorId)
-          .maybeSingle();
+        const [profileRes, contentRes] = await Promise.all([
+          fetch(`/api/profile?creatorId=${params.creatorId}`),
+          supabase.from('content').select('*').eq('creator_id', params.creatorId).eq('is_active', true),
+        ]);
 
-        if (profileError) console.error('Profile fetch error:', profileError);
-
-        const { data: contentData } = await supabase
-          .from('content')
-          .select('*')
-          .eq('creator_id', params.creatorId)
-          .eq('is_active', true);
-
-        setProfile(profileData || null);
-        setPacks(contentData || []);
+        const profileData = await profileRes.json();
+        if (profileData?.id) setProfile(profileData);
+        if (contentRes.data) setPacks(contentRes.data);
       } catch (err) {
         console.error('Error loading profile:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetch();
+    loadData();
   }, [params.creatorId]);
 
   if (loading) {
@@ -67,8 +59,16 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
     );
   }
 
-  const stageName = profile.stage_name || 'Creador';
-  const socials = profile.socials ? profile.socials.split('\n').filter((s: string) => s.trim()) : [];
+  const stageName = profile.stage_name || profile.stageName || 'Creador';
+  const bio = profile.bio || '';
+  const avatarUrl = profile.avatar_url || '';
+
+  const socialLinks: { icon: any; href: string; label: string }[] = [];
+  if (profile.instagram) socialLinks.push({ icon: Instagram, href: profile.instagram.startsWith('@') ? `https://instagram.com/${profile.instagram.slice(1)}` : profile.instagram, label: 'Instagram' });
+  if (profile.tiktok) socialLinks.push({ icon: Music2, href: profile.tiktok.startsWith('@') ? `https://tiktok.com/@${profile.tiktok.slice(1)}` : profile.tiktok, label: 'TikTok' });
+  if (profile.twitter) socialLinks.push({ icon: Star, href: profile.twitter.startsWith('@') ? `https://x.com/${profile.twitter.slice(1)}` : profile.twitter, label: 'X' });
+
+  const extraSocials = profile.socials ? profile.socials.split('\n').filter((s: string) => s.trim()) : [];
 
   return (
     <>
@@ -77,21 +77,30 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Creator Profile */}
           <div className="glass-card rounded-2xl p-8 mb-12 text-center">
-            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-accent-violet to-accent-cyan flex items-center justify-center text-3xl font-bold mb-4">
-              {stageName.charAt(0).toUpperCase()}
+            <div className="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-accent-violet to-accent-cyan flex items-center justify-center text-3xl font-bold mb-4">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={stageName} className="w-full h-full object-cover" />
+              ) : (
+                stageName.charAt(0).toUpperCase()
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">{stageName}</h1>
-            <p className="text-muted max-w-md mx-auto mb-6">Creadora de contenido exclusivo en Drops</p>
+            <p className="text-muted max-w-md mx-auto mb-6">{bio || 'Creadora de contenido exclusivo en Drops'}</p>
 
-            {socials.length > 0 && (
+            {(socialLinks.length > 0 || extraSocials.length > 0) && (
               <div className="flex items-center justify-center gap-4 mb-6">
-                {socials.map((s: string, i: number) => {
+                {socialLinks.map((link, i) => (
+                  <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors" aria-label={link.label}>
+                    <link.icon className="w-5 h-5" />
+                  </a>
+                ))}
+                {extraSocials.map((s: string, i: number) => {
                   const isInstagram = s.toLowerCase().includes('instagram') || s.toLowerCase().includes('ig');
                   const isTiktok = s.toLowerCase().includes('tiktok');
                   const url = s.replace(/^(Instagram|TikTok|X|Twitter|IG):\s*/i, '').trim();
                   const href = url.startsWith('http') ? url : `https://${url}`;
                   return (
-                    <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors" aria-label={isInstagram ? 'Instagram' : isTiktok ? 'TikTok' : 'Red social'}>
+                    <a key={`extra-${i}`} href={href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors">
                       {isInstagram ? <Instagram className="w-5 h-5" /> : isTiktok ? <Music2 className="w-5 h-5" /> : <Star className="w-5 h-5" />}
                     </a>
                   );
