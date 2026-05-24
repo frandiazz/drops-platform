@@ -193,8 +193,9 @@ export default function SettingsPage() {
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
-                placeholder="@tuusuario"
+                placeholder="usuario"
               />
+              <p className="text-xs text-slate-600 mt-1">Solo tu usuario, sin @ ni link completo</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-2 flex items-center gap-2">
@@ -205,8 +206,9 @@ export default function SettingsPage() {
                 value={tiktok}
                 onChange={(e) => setTiktok(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
-                placeholder="@tuusuario"
+                placeholder="usuario"
               />
+              <p className="text-xs text-slate-600 mt-1">Solo tu usuario, sin @ ni link completo</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-2 flex items-center gap-2">
@@ -217,20 +219,22 @@ export default function SettingsPage() {
                 value={twitter}
                 onChange={(e) => setTwitter(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors"
-                placeholder="@tuusuario"
+                placeholder="usuario"
               />
+              <p className="text-xs text-slate-600 mt-1">Solo tu usuario, sin @ ni link completo</p>
             </div>
 
             <div className="pt-2 border-t border-slate-700/30">
-              <label htmlFor="socials" className="block text-sm font-medium text-muted mb-2">Otras redes (formato libre)</label>
+              <label htmlFor="socials" className="block text-sm font-medium text-muted mb-2">Otras redes</label>
               <textarea
                 id="socials"
                 rows={2}
                 value={socials}
                 onChange={(e) => setSocials(e.target.value)}
                 className="w-full rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 py-3 text-white focus:border-accent-violet focus:outline-none transition-colors resize-none"
-                placeholder="OnlyFans: @tuusuario"
+                placeholder="Ej: https://onlyfans.com/tuusuario"
               />
+              <p className="text-xs text-slate-600 mt-1">Pegá el link completo para redes que no sean IG, TikTok o X</p>
             </div>
 
             <button
