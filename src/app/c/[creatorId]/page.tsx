@@ -63,10 +63,12 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
   const bio = profile.bio || '';
   const avatarUrl = profile.avatar_url || '';
 
+  const cleanSocial = (val: string) => val.replace(/^@/, '').trim();
+
   const socialLinks: { icon: any; href: string; label: string }[] = [];
-  if (profile.instagram) socialLinks.push({ icon: Instagram, href: profile.instagram.startsWith('@') ? `https://instagram.com/${profile.instagram.slice(1)}` : profile.instagram, label: 'Instagram' });
-  if (profile.tiktok) socialLinks.push({ icon: Music2, href: profile.tiktok.startsWith('@') ? `https://tiktok.com/@${profile.tiktok.slice(1)}` : profile.tiktok, label: 'TikTok' });
-  if (profile.twitter) socialLinks.push({ icon: Star, href: profile.twitter.startsWith('@') ? `https://x.com/${profile.twitter.slice(1)}` : profile.twitter, label: 'X' });
+  if (profile.instagram) socialLinks.push({ icon: Instagram, href: `https://www.instagram.com/${cleanSocial(profile.instagram)}`, label: 'Instagram' });
+  if (profile.tiktok) socialLinks.push({ icon: Music2, href: `https://www.tiktok.com/@${cleanSocial(profile.tiktok)}`, label: 'TikTok' });
+  if (profile.twitter) socialLinks.push({ icon: Star, href: `https://x.com/${cleanSocial(profile.twitter)}`, label: 'X' });
 
   const extraSocials = profile.socials ? profile.socials.split('\n').filter((s: string) => s.trim()) : [];
 
@@ -97,8 +99,21 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                 {extraSocials.map((s: string, i: number) => {
                   const isInstagram = s.toLowerCase().includes('instagram') || s.toLowerCase().includes('ig');
                   const isTiktok = s.toLowerCase().includes('tiktok');
-                  const url = s.replace(/^(Instagram|TikTok|X|Twitter|IG):\s*/i, '').trim();
-                  const href = url.startsWith('http') ? url : `https://${url}`;
+                  const isX = s.toLowerCase().includes('x') || s.toLowerCase().includes('twitter');
+                  let raw = s.replace(/^(Instagram|TikTok|X|Twitter|IG):\s*/i, '').trim();
+                  raw = raw.replace(/^@/, '');
+                  let href: string;
+                  if (raw.startsWith('http')) {
+                    href = raw;
+                  } else if (isInstagram) {
+                    href = `https://www.instagram.com/${raw}`;
+                  } else if (isTiktok) {
+                    href = `https://www.tiktok.com/@${raw}`;
+                  } else if (isX) {
+                    href = `https://x.com/${raw}`;
+                  } else {
+                    href = `https://${raw}`;
+                  }
                   return (
                     <a key={`extra-${i}`} href={href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors">
                       {isInstagram ? <Instagram className="w-5 h-5" /> : isTiktok ? <Music2 className="w-5 h-5" /> : <Star className="w-5 h-5" />}
