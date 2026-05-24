@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle, Lock, User } from 'lucide-react';
 
 declare global {
   interface Window { MercadoPago: any; }
@@ -57,6 +57,8 @@ function CheckoutContent() {
   const packPrice = searchParams.get('price') || '29.99';
   const creatorId = searchParams.get('creatorId') || '';
   const packId = searchParams.get('packId') || '';
+  const creatorName = searchParams.get('creator') || '';
+  const creatorAvatar = searchParams.get('avatar') || '';
 
   useEffect(() => {
     fetch('/api/rate').then(r => r.json()).then(d => setArsRate(d.rate)).catch(() => {});
@@ -147,23 +149,53 @@ function CheckoutContent() {
 
           <div className="grid lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2">
-              <div className="glass-card rounded-2xl p-6 sticky top-24">
-                <div className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center mb-6">
+              <div className="glass-card rounded-2xl p-6 sticky top-24 space-y-5">
+
+                {/* Creator info */}
+                {creatorName && (
+                  <div className="flex items-center gap-3 pb-4 border-b border-slate-700/30">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-dark-light/80 flex-shrink-0">
+                      {creatorAvatar ? (
+                        <img src={creatorAvatar} alt={creatorName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-sm font-bold text-muted">{creatorName.charAt(0).toUpperCase()}</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted">Comprando a</p>
+                      <p className="text-sm font-semibold truncate">{creatorName}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Product info */}
+                <div className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center">
                   <span className="text-6xl">{'\u{1F4E6}'}</span>
                 </div>
-                <h2 className="text-xl font-bold mb-2">{packTitle}</h2>
-                <p className="text-xs text-muted mb-2">Contenido exclusivo en Drops</p>
-                <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">{packTitle}</h2>
+                <p className="text-xs text-muted">Contenido exclusivo en Drops</p>
+                <div className="flex items-center justify-between">
                   <span className="text-3xl font-black text-accent-cyan">${packPrice}</span>
                   <span className="text-xs text-muted">USD</span>
                 </div>
-                <p className="text-xs text-slate-500 text-right -mt-2 mb-4">
+                <p className="text-xs text-slate-500 text-right -mt-2">
                   ≈ ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                 </p>
+
+                {/* Trust badges */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato</span></div>
-                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro</span></div>
-                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Pago seguro</span></div>
+                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato al pagar</span></div>
+                  <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro · Solo tarjeta</span></div>
+                  <div className="flex items-center gap-2 text-sm text-muted"><Lock className="w-4 h-4 text-green-400" /><span>Pago 100% seguro</span></div>
+                </div>
+
+                {/* MP badge */}
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-bold">MP</div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-blue-400">Procesado por Mercado Pago</p>
+                    <p className="text-[10px] text-slate-500">Pago seguro · Datos encriptados</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -251,13 +283,19 @@ function CheckoutContent() {
                       <><CreditCard className="w-5 h-5" /> Pagar ARS $ {(parseFloat(packPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</>
                     )}
                   </button>
+
+                  <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-slate-600">
+                    <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Conexión segura</span>
+                    <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Datos encriptados</span>
+                    <span className="flex items-center gap-1"><Check className="w-3 h-3" /> Respaldado por MP</span>
+                  </div>
                 </div>
               </form>
 
               <div className="mt-8 grid grid-cols-3 gap-4">
-                <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Pago express</p></div>
-                <div className="text-center"><Shield className="w-6 h-6 text-green-400 mx-auto mb-2" /><p className="text-xs text-muted">Pago seguro</p></div>
-                <div className="text-center"><Check className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Contenido automático</p></div>
+                <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Checkout express</p></div>
+                <div className="text-center"><Lock className="w-6 h-6 text-green-400 mx-auto mb-2" /><p className="text-xs text-muted">Pago 100% seguro</p></div>
+                <div className="text-center"><Check className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Acceso instantáneo</p></div>
               </div>
 
               <div className="mt-6 glass-card rounded-xl p-5 text-center">
