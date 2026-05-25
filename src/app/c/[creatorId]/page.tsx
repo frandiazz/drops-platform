@@ -132,46 +132,46 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
           </div>
 
           {/* Content Packs */}
-          <h2 className="text-xl font-bold mb-6">Contenido disponible</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <h2 className="text-xl font-bold mb-4">Contenido disponible</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
             {packs.length === 0 && (
               <p className="text-muted col-span-full text-center py-12">Este creador aún no tiene contenido disponible.</p>
             )}
-            {packs.map((pack) => (
-              <div key={pack.id} className="glass-card rounded-xl overflow-hidden group">
-                <div className="aspect-square bg-dark-light/50 border-b border-slate-700/50 flex items-center justify-center">
-                  {pack.media_urls?.[0] ? (
-                    <img src={pack.media_urls[0]} alt={pack.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-5xl group-hover:scale-110 transition-transform duration-300">📦</span>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold mb-1">{pack.title}</h3>
-                  <p className="text-xs text-muted mb-4">{pack.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xl font-black text-accent-cyan">
-                        {pack.type === 'subscription' ? `$${pack.subscription_price}` : `$${pack.price}`}
-                      </span>
-                      <span className="text-xs text-muted ml-1">
-                        {pack.type === 'subscription' ? '/mes' : 'USD'}
-                      </span>
+            {packs.map((pack) => {
+              const checkoutHref = `/checkout?creatorId=${params.creatorId}&packId=${pack.id}&price=${pack.type === 'subscription' ? pack.subscription_price : pack.price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}&type=${pack.type || 'one_time'}&subscriptionPrice=${pack.subscription_price || ''}`;
+              return (
+                <div key={pack.id} className="group rounded-xl overflow-hidden glass-card transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
+                  <Link href={checkoutHref} className="block">
+                    <div className="aspect-square bg-dark-light/50 relative">
+                      {pack.media_urls?.[0] ? (
+                        <img src={pack.media_urls[0]} alt={pack.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl">📦</div>
+                      )}
+                      <div className="absolute bottom-1.5 left-1.5">
+                        <span className="px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md text-[11px] font-bold text-white leading-none inline-block">
+                          {pack.type === 'subscription' ? `$${pack.subscription_price}/mes` : `$${pack.price}`}
+                        </span>
+                      </div>
                       {pack.type === 'subscription' && (
-                        <div className="text-[10px] text-cyan-400 font-semibold">Suscripción mensual</div>
+                        <div className="absolute top-1.5 right-1.5">
+                          <span className="px-1.5 py-0.5 bg-cyan-500/80 backdrop-blur-sm rounded text-[10px] font-semibold text-white">🔄</span>
+                        </div>
                       )}
                     </div>
+                  </Link>
+                  <div className="p-2.5 space-y-2">
+                    <h3 className="text-sm font-semibold truncate leading-tight">{pack.title}</h3>
                     <Link
-                      href={`/checkout?creatorId=${params.creatorId}&packId=${pack.id}&price=${pack.type === 'subscription' ? pack.subscription_price : pack.price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}&type=${pack.type || 'one_time'}&subscriptionPrice=${pack.subscription_price || ''}`}
-                      className="px-4 py-2 bg-accent-violet text-white text-sm font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-1"
+                      href={checkoutHref}
+                      className="block w-full py-2 bg-accent-violet text-white text-xs font-semibold rounded-lg text-center hover:bg-violet-600 transition-colors"
                     >
                       {pack.type === 'subscription' ? 'Suscribirse' : 'Comprar'}
-                      <ExternalLink className="w-4 h-4" />
                     </Link>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Trust Section */}
