@@ -114,7 +114,7 @@ export default function DashboardPage() {
               </code>
               <button
                 onClick={() => navigator.clipboard.writeText(`https://drops-ly.vercel.app/c/${user?.id || 'tu-usuario'}`)}
-                className="px-3 py-2 bg-accent-violet/20 text-accent-violet rounded hover:bg-accent-violet/30 transition-colors text-sm font-medium"
+                className="px-4 py-3 min-h-[44px] bg-accent-violet/20 text-accent-violet rounded-lg hover:bg-accent-violet/30 transition-colors text-sm font-medium"
               >
                 Copiar
               </button>

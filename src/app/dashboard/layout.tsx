@@ -115,13 +115,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-slate-800/50">
-        <nav className="flex justify-around py-2">
+        <nav className="flex justify-around py-1">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
-              <Link key={item.href} href={item.href} className="flex flex-col items-center gap-1 px-3 py-2 text-muted hover:text-white transition-colors">
+              <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 px-2 py-3 min-w-[64px] rounded-lg transition-colors ${isActive ? 'text-accent-violet' : 'text-muted hover:text-white'}`}>
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px]">{item.label}</span>
+                <span className="text-[11px] font-medium leading-tight text-center">{item.label}</span>
               </Link>
             );
           })}

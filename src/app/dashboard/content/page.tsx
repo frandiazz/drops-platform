@@ -166,7 +166,7 @@ export default function ContentPage() {
       {/* Upload Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-card rounded-2xl p-6 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="glass-card rounded-2xl p-4 sm:p-8 w-full max-w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">{editingPack ? 'Editar pack' : 'Nuevo pack de contenido'}</h2>
               <button onClick={() => { setShowForm(false); resetForm(); }} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
@@ -218,7 +218,7 @@ export default function ContentPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-muted mb-2">
                     {contentType === 'one_time' ? 'Precio (USD)' : 'Precio único (USD)'}

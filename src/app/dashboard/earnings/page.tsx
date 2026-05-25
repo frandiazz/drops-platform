@@ -161,7 +161,7 @@ export default function EarningsPage() {
         <p className="text-xs text-muted mb-4">Tus clientes pagan con tarjeta vía Mercado Pago (ARS). El cobro se acredita en tu cuenta de Mercado Pago. Después podés transferirlo a tu banco.</p>
 
         <h4 className="text-sm font-semibold text-muted mb-3">Tarjetas aceptadas para cobrar</h4>
-        <div className="flex items-center gap-5 text-slate-400 mb-6">
+        <div className="flex items-center gap-5 flex-wrap text-slate-400 mb-6">
           <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-dark-light/50">
             <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#1A1F71"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">VISA</text></svg>
             <span className="text-[10px]">Visa</span>

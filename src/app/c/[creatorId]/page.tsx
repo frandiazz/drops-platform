@@ -90,9 +90,9 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
             <p className="text-muted max-w-md mx-auto mb-6">{bio || 'Creadora de contenido exclusivo en Drops'}</p>
 
             {(socialLinks.length > 0 || extraSocials.length > 0) && (
-              <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="flex items-center justify-center gap-3 flex-wrap mb-6">
                 {socialLinks.map((link, i) => (
-                  <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors" aria-label={link.label}>
+                  <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors" aria-label={link.label}>
                     <link.icon className="w-5 h-5" />
                   </a>
                 ))}
@@ -115,7 +115,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                     href = `https://${raw}`;
                   }
                   return (
-                    <a key={`extra-${i}`} href={href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors">
+                    <a key={`extra-${i}`} href={href} target="_blank" rel="noopener noreferrer" className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors">
                       {isInstagram ? <Instagram className="w-5 h-5" /> : isTiktok ? <Music2 className="w-5 h-5" /> : <Star className="w-5 h-5" />}
                     </a>
                   );

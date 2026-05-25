@@ -247,27 +247,27 @@ function CheckoutContent() {
                         placeholder="5031 7557 3453 0604"
                         className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors tracking-wider text-lg" />
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
                         <label className="block text-sm font-medium text-muted mb-2">Vencimiento</label>
                         <input type="text" inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(formatExpiry(e.target.value))} required
                           placeholder="MM / AA"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-center text-lg" />
                       </div>
-                      <div className="col-span-1">
+                      <div>
                         <label className="block text-sm font-medium text-muted mb-2">CVV</label>
                         <input type="text" inputMode="numeric" value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} required
                           placeholder="123"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-center text-lg" />
                       </div>
-                      <div className="col-span-1">
+                      <div>
                         <label className="block text-sm font-medium text-muted mb-2">Titular</label>
                         <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} required
                           placeholder="Nombre"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-sm" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-muted mb-2">Tipo de doc.</label>
                         <select value={docType} onChange={(e) => setDocType(e.target.value)}
@@ -277,7 +277,7 @@ function CheckoutContent() {
                           <option value="Pasaporte">Pasaporte</option>
                         </select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="sm:col-span-2">
                         <label className="block text-sm font-medium text-muted mb-2">Número de documento</label>
                         <input type="text" inputMode="numeric" value={docNumber} onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, '').slice(0, 20))} required
                           placeholder="12345678"
@@ -305,7 +305,7 @@ function CheckoutContent() {
                 </div>
               </form>
 
-              <div className="mt-8 grid grid-cols-3 gap-4">
+              <div className="flex flex-wrap justify-center gap-6 sm:gap-8 mt-8">
                 <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Checkout express</p></div>
                 <div className="text-center"><Lock className="w-6 h-6 text-green-400 mx-auto mb-2" /><p className="text-xs text-muted">Pago 100% seguro</p></div>
                 <div className="text-center"><Check className="w-6 h-6 text-accent-violet mx-auto mb-2" /><p className="text-xs text-muted">Acceso instantáneo</p></div>
@@ -313,7 +313,7 @@ function CheckoutContent() {
 
               <div className="mt-6 glass-card rounded-xl p-5 text-center">
                 <p className="text-xs font-semibold text-muted mb-3">Tarjetas aceptadas</p>
-                <div className="flex items-center justify-center gap-5 text-slate-400">
+                <div className="flex items-center justify-center gap-5 flex-wrap text-slate-400">
                   <div className="flex flex-col items-center gap-1">
                     <svg className="w-10 h-7" viewBox="0 0 50 30"><rect width="50" height="30" rx="4" fill="#1A1F71"/><text x="25" y="19" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">VISA</text></svg>
                     <span className="text-[10px]">Visa</span>
