@@ -1,46 +1,36 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseKey) return null;
-  const { createClient } = require('@supabase/supabase-js');
-  return createClient(supabaseUrl, supabaseKey);
-}
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const body = JSON.parse(await request.text());
-    const {
-      name, email, instagram, tiktok, twitter, age, country,
-      content_type, why_join, referral, experience, service, photos,
-    } = body;
+    const body = await request.json();
+    const { name, email, age, country, instagram, tiktok, twitter, other_social, photo_urls, experience } = body;
 
-    const supabase = getSupabase();
-    if (supabase) {
-      const { error: dbError } = await supabase.from('applications').insert({
-        name,
-        email,
-        socials: `IG: ${instagram}${tiktok ? `, TK: ${tiktok}` : ''}${twitter ? `, X: ${twitter}` : ''}`,
-        instagram: instagram || null,
-        tiktok: tiktok || null,
-        twitter: twitter || null,
-        age: age || null,
-        country: country || null,
-        content_type: content_type || null,
-        why_join: why_join || null,
-        referral: referral || null,
-        experience: experience || null,
-        service: service || null,
-        photos: photos || [],
-        status: 'pending',
-      });
-      if (dbError) console.error('DB error:', dbError);
-    }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { error } = await supabase.from('applications').insert({
+      name,
+      email,
+      age,
+      country,
+      instagram,
+      tiktok,
+      twitter,
+      other_social,
+      photo_urls: photo_urls || [],
+      experience,
+      status: 'pending',
+    });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Error:', error);
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+  } catch (err) {
+    console.error('Apply error:', err);
+    return NextResponse.json({ error: 'Error al enviar postulación' }, { status: 500 });
   }
 }

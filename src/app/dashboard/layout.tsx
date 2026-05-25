@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Droplets, Repeat } from 'lucide-react';
 
-const ADMIN_EMAIL = 'DropsDrops2005@gmail.com';
-
-const baseNavItems = [
+const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/content', label: 'Contenido', icon: Upload },
   { href: '/dashboard/earnings', label: 'Ganancias', icon: DollarSign },
@@ -22,10 +20,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true);
 
   const isLoginPage = pathname === '/dashboard/login';
-  const isAdmin = user?.email === ADMIN_EMAIL;
-  const navItems = isAdmin
-    ? [...baseNavItems, { href: '/dashboard/applications', label: 'Postulaciones', icon: Users }]
-    : baseNavItems;
 
   useEffect(() => {
     if (isLoginPage) {

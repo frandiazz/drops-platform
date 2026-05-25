@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = JSON.parse(await request.text());
-    const { image, folder } = body;
+    const { image } = body;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,11 +17,10 @@ export async function POST(request: Request) {
 
     const base64Data = image.split(',')[1] || image;
     const buffer = Buffer.from(base64Data, 'base64');
-    const bucket = folder || 'content';
-    const fileName = `${bucket}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
 
     const { data, error } = await supabase.storage
-      .from(bucket)
+      .from('content')
       .upload(fileName, buffer, {
         contentType: 'image/jpeg',
         upsert: false,
@@ -33,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
+      .from('content')
       .getPublicUrl(fileName);
 
     return NextResponse.json({ url: publicUrl });
