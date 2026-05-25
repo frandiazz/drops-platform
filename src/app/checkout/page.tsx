@@ -153,7 +153,7 @@ function CheckoutContent() {
 
           <div className="grid lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2">
-              <div className="glass-card rounded-2xl p-6 sticky top-24 space-y-5">
+              <div className="glass-card rounded-2xl p-6 lg:sticky lg:top-24 space-y-5">
 
                 {/* Creator info */}
                 {creatorName && (
@@ -237,7 +237,7 @@ function CheckoutContent() {
                         <span className="text-muted">Pagás en ARS (tasa del día):</span>
                         <span className="text-accent-cyan font-bold">ARS $ {(parseFloat(displayPrice) * arsRate).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
                       </div>
-                    <p className="text-[10px] text-slate-600 pt-1 border-t border-slate-700/30">Tu tarjeta emitida en el exterior convertirá automáticamente. Recibís el contenido al instante.</p>
+                    <p className="text-[11px] text-slate-600 pt-1 border-t border-slate-700/30">Tu tarjeta emitida en el exterior convertirá automáticamente. Recibís el contenido al instante.</p>
                   </div>
 
                   <div className="space-y-4">
@@ -297,7 +297,7 @@ function CheckoutContent() {
                     )}
                   </button>
 
-                  <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-slate-600">
+                  <div className="mt-4 flex items-center justify-center gap-4 text-xs text-slate-600">
                     <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Conexión segura</span>
                     <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Datos encriptados</span>
                     <span className="flex items-center gap-1"><Check className="w-3 h-3" /> Respaldado por MP</span>
@@ -335,7 +335,7 @@ function CheckoutContent() {
                     <span className="text-[10px]">Discover</span>
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-600 mt-3">Aceptamos tarjetas nacionales e internacionales</p>
+                <p className="text-xs text-slate-600 mt-3">Aceptamos tarjetas nacionales e internacionales</p>
               </div>
             </div>
           </div>

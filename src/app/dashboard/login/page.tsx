@@ -41,7 +41,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8">
+        <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8 py-2">
           <ArrowLeft className="w-4 h-4" /> Volver al inicio
         </Link>
 
@@ -108,7 +108,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted">
             {isLogin ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?'}{' '}
-            <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccess(''); }} className="text-accent-cyan hover:underline font-medium">
+            <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccess(''); }} className="text-accent-cyan hover:underline font-medium py-2">
               {isLogin ? 'Registrate' : 'Iniciá sesión'}
             </button>
           </p>

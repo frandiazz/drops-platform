@@ -219,7 +219,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                       <p className="text-sm font-semibold mb-1">Acceso a Telegram</p>
                       <p className="text-xs text-muted mb-3">Unite al grupo privado:</p>
                       <a href={content.telegram_link} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors">
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors">
                         <Send className="w-4 h-4" /> Unirse al grupo
                       </a>
                     </div>

@@ -38,7 +38,7 @@ export default function Header() {
 
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden flex flex-col gap-1.5 p-2 z-50 relative"
+          className="md:hidden flex flex-col gap-1.5 p-3 z-50 relative"
           aria-label="Abrir menú de navegación"
           aria-expanded={menuOpen}
         >
@@ -55,13 +55,26 @@ export default function Header() {
       </nav>
 
       {menuOpen && (
-        <div className="fixed inset-0 top-16 bg-dark/95 backdrop-blur-xl md:hidden flex flex-col items-center justify-center gap-8 text-lg font-medium z-40">
-          <a href="#inicio" onClick={() => setMenuOpen(false)} className="text-muted hover:text-white transition-colors">Inicio</a>
-          <a href="#servicios" onClick={() => setMenuOpen(false)} className="text-muted hover:text-white transition-colors">Servicios</a>
-          <a href="#friccion-cero" onClick={() => setMenuOpen(false)} className="text-muted hover:text-white transition-colors">Fricción Cero</a>
-          <a href="#calculadora" onClick={() => setMenuOpen(false)} className="text-muted hover:text-white transition-colors">Calcular Ganancias</a>
-          <Link href="/dashboard/login" onClick={() => setMenuOpen(false)} className="text-muted hover:text-white transition-colors">Iniciar Sesión</Link>
-          <a href="#postularme" onClick={() => setMenuOpen(false)} className="mt-4 px-8 py-3 bg-accent-violet text-white font-semibold rounded-lg neon-glow">Unite como Creador</a>
+        <div className="fixed inset-0 top-0 bg-dark/98 backdrop-blur-2xl md:hidden z-40 flex flex-col">
+          <div className="flex items-center justify-end px-4 h-16">
+            <button onClick={() => setMenuOpen(false)} className="p-3" aria-label="Cerrar menú">
+              <X className="w-6 h-6 text-white" />
+            </button>
+          </div>
+          <nav className="flex-1 flex flex-col px-6 pt-4 pb-8" aria-label="Navegación móvil">
+            <div className="glass-card rounded-2xl divide-y divide-slate-700/30 overflow-hidden">
+              <a href="#inicio" onClick={() => setMenuOpen(false)} className="flex items-center px-5 py-4 text-base font-medium text-white hover:bg-slate-800/50 transition-colors">Inicio</a>
+              <a href="#servicios" onClick={() => setMenuOpen(false)} className="flex items-center px-5 py-4 text-base font-medium text-muted hover:text-white hover:bg-slate-800/50 transition-colors">Servicios</a>
+              <a href="#friccion-cero" onClick={() => setMenuOpen(false)} className="flex items-center px-5 py-4 text-base font-medium text-muted hover:text-white hover:bg-slate-800/50 transition-colors">Fricción Cero</a>
+              <a href="#calculadora" onClick={() => setMenuOpen(false)} className="flex items-center px-5 py-4 text-base font-medium text-muted hover:text-white hover:bg-slate-800/50 transition-colors">Calcular Ganancias</a>
+            </div>
+            <div className="mt-4 glass-card rounded-2xl divide-y divide-slate-700/30 overflow-hidden">
+              <Link href="/dashboard/login" onClick={() => setMenuOpen(false)} className="flex items-center px-5 py-4 text-base font-medium text-muted hover:text-white hover:bg-slate-800/50 transition-colors">Iniciar Sesión</Link>
+            </div>
+            <a href="#postularme" onClick={() => setMenuOpen(false)} className="mt-auto w-full py-4 bg-accent-violet text-white text-base font-bold rounded-xl neon-glow text-center hover:bg-violet-600 transition-all">
+              Unite como Creador
+            </a>
+          </nav>
         </div>
       )}
     </header>

@@ -17,7 +17,7 @@ export default function Footer() {
               La plataforma de monetización y management para creadores de contenido y modelos de IA. Maximizamos tus ingresos con tecnología de vanguardia.
             </p>
             <div className="flex gap-4 mt-6">
-              <a href="mailto:DropsDrops2005@gmail.com" className="w-10 h-10 rounded-lg glass flex items-center justify-center text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all duration-200" aria-label="Contacto por email">
+              <a href="mailto:DropsDrops2005@gmail.com" className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all duration-200" aria-label="Contacto por email">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
               </a>
             </div>
@@ -26,21 +26,21 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">Navegación</h4>
             <ul className="space-y-3">
-              <li><a href="#inicio" className="text-sm text-muted hover:text-white transition-colors">Inicio</a></li>
-              <li><a href="#servicios" className="text-sm text-muted hover:text-white transition-colors">Servicios</a></li>
-              <li><a href="#friccion-cero" className="text-sm text-muted hover:text-white transition-colors">Fricción Cero</a></li>
-              <li><a href="#calculadora" className="text-sm text-muted hover:text-white transition-colors">Calcular Ganancias</a></li>
-              <li><a href="#como-funciona" className="text-sm text-muted hover:text-white transition-colors">Cómo Funciona</a></li>
+              <li><a href="#inicio" className="block py-2 text-sm text-muted hover:text-white transition-colors">Inicio</a></li>
+              <li><a href="#servicios" className="block py-2 text-sm text-muted hover:text-white transition-colors">Servicios</a></li>
+              <li><a href="#friccion-cero" className="block py-2 text-sm text-muted hover:text-white transition-colors">Fricción Cero</a></li>
+              <li><a href="#calculadora" className="block py-2 text-sm text-muted hover:text-white transition-colors">Calcular Ganancias</a></li>
+              <li><a href="#como-funciona" className="block py-2 text-sm text-muted hover:text-white transition-colors">Cómo Funciona</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">Legal</h4>
             <ul className="space-y-3">
-              <li><Link href="/terminos" className="text-sm text-muted hover:text-white transition-colors">Términos para Creadores</Link></li>
-              <li><Link href="/privacidad" className="text-sm text-muted hover:text-white transition-colors">Políticas de Privacidad</Link></li>
-              <li><a href="#" className="text-sm text-muted hover:text-white transition-colors">Soporte DMCA</a></li>
-              <li><a href="#" className="text-sm text-muted hover:text-white transition-colors">Contacto</a></li>
+              <li><Link href="/terminos" className="block py-2 text-sm text-muted hover:text-white transition-colors">Términos para Creadores</Link></li>
+              <li><Link href="/privacidad" className="block py-2 text-sm text-muted hover:text-white transition-colors">Políticas de Privacidad</Link></li>
+              <li><a href="#" className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</a></li>
+              <li><a href="#" className="block py-2 text-sm text-muted hover:text-white transition-colors">Contacto</a></li>
             </ul>
           </div>
         </div>
