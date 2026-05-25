@@ -19,17 +19,27 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user');
+      if (!user) throw new Error('No se pudo obtener el usuario');
 
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .maybeSingle();
+
+      if (!profile) {
+        const { error: insertError } = await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          role: 'admin',
+        }, { onConflict: 'id' });
+        if (insertError) throw insertError;
+        profile = { role: 'admin' };
+      }
 
       if (profile?.role !== 'admin') {
         await supabase.auth.signOut();
@@ -95,6 +105,10 @@ export default function AdminLoginPage() {
             {loading ? 'Verificando...' : 'Ingresar'}
           </button>
         </form>
+
+        <p className="text-center text-xs text-muted mt-6">
+          ¿No tenés cuenta? <Link href="/dashboard/login" className="text-accent-cyan hover:underline">Crear cuenta primero</Link>
+        </p>
       </div>
     </div>
   );
