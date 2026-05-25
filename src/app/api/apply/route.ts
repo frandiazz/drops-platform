@@ -1,27 +1,45 @@
 import { NextResponse } from 'next/server';
 
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return null;
+  const { createClient } = require('@supabase/supabase-js');
+  return createClient(supabaseUrl, supabaseKey);
+}
+
 export async function POST(request: Request) {
   try {
     const body = JSON.parse(await request.text());
-    const { name, email, socials, service } = body;
+    const {
+      name, email, instagram, tiktok, twitter, age, country,
+      content_type, why_join, referral, experience, service, photos,
+    } = body;
 
-    try {
-      const { Resend } = await import('resend');
-      if (process.env.RESEND_API_KEY) {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: 'Drops <onboarding@resend.dev>',
-          to: ['DropsDrops2005@gmail.com'],
-          subject: `Nueva postulación de creador: ${name}`,
-          html: `<p>Nombre: ${name}</p><p>Email: ${email}</p><p>Redes: ${socials}</p><p>Servicio: ${service}</p>`,
-        });
-      }
-    } catch (emailError) {
-      console.error('Error sending email:', emailError);
+    const supabase = getSupabase();
+    if (supabase) {
+      const { error: dbError } = await supabase.from('applications').insert({
+        name,
+        email,
+        socials: `IG: ${instagram}${tiktok ? `, TK: ${tiktok}` : ''}${twitter ? `, X: ${twitter}` : ''}`,
+        instagram: instagram || null,
+        tiktok: tiktok || null,
+        twitter: twitter || null,
+        age: age || null,
+        country: country || null,
+        content_type: content_type || null,
+        why_join: why_join || null,
+        referral: referral || null,
+        experience: experience || null,
+        service: service || null,
+        photos: photos || [],
+        status: 'pending',
+      });
+      if (dbError) console.error('DB error:', dbError);
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
