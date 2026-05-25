@@ -26,11 +26,11 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">Navegación</h4>
             <ul className="space-y-3">
-              <li><a href="#inicio" className="block py-2 text-sm text-muted hover:text-white transition-colors">Inicio</a></li>
-              <li><a href="#servicios" className="block py-2 text-sm text-muted hover:text-white transition-colors">Servicios</a></li>
-              <li><a href="#friccion-cero" className="block py-2 text-sm text-muted hover:text-white transition-colors">Fricción Cero</a></li>
-              <li><a href="#calculadora" className="block py-2 text-sm text-muted hover:text-white transition-colors">Calcular Ganancias</a></li>
-              <li><a href="#como-funciona" className="block py-2 text-sm text-muted hover:text-white transition-colors">Cómo Funciona</a></li>
+              <li><Link href="/#inicio" className="block py-2 text-sm text-muted hover:text-white transition-colors">Inicio</Link></li>
+              <li><Link href="/#servicios" className="block py-2 text-sm text-muted hover:text-white transition-colors">Servicios</Link></li>
+              <li><Link href="/#friccion-cero" className="block py-2 text-sm text-muted hover:text-white transition-colors">Fricción Cero</Link></li>
+              <li><Link href="/#calculadora" className="block py-2 text-sm text-muted hover:text-white transition-colors">Calcular Ganancias</Link></li>
+              <li><Link href="/#como-funciona" className="block py-2 text-sm text-muted hover:text-white transition-colors">Cómo Funciona</Link></li>
             </ul>
           </div>
 
@@ -39,8 +39,8 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link href="/terminos" className="block py-2 text-sm text-muted hover:text-white transition-colors">Términos para Creadores</Link></li>
               <li><Link href="/privacidad" className="block py-2 text-sm text-muted hover:text-white transition-colors">Políticas de Privacidad</Link></li>
-              <li><a href="#" className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</a></li>
-              <li><a href="#" className="block py-2 text-sm text-muted hover:text-white transition-colors">Contacto</a></li>
+              <li><a href="mailto:DropsDrops2005@gmail.com?subject=DMCA" className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</a></li>
+              <li><a href="mailto:DropsDrops2005@gmail.com" className="block py-2 text-sm text-muted hover:text-white transition-colors">Contacto</a></li>
             </ul>
           </div>
         </div>

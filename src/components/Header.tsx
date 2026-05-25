@@ -27,17 +27,17 @@ export default function Header() {
           </Link>
 
           <ul className="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
-            <li><a href="#inicio" className="hover:text-white transition-colors duration-200">Inicio</a></li>
-            <li><a href="#servicios" className="hover:text-white transition-colors duration-200">Servicios</a></li>
-            <li><a href="#friccion-cero" className="hover:text-white transition-colors duration-200">Fricción Cero</a></li>
-            <li><a href="#calculadora" className="hover:text-white transition-colors duration-200">Calcular Ganancias</a></li>
+            <li><Link href="/#inicio" className="hover:text-white transition-colors duration-200">Inicio</Link></li>
+            <li><Link href="/#servicios" className="hover:text-white transition-colors duration-200">Servicios</Link></li>
+            <li><Link href="/#friccion-cero" className="hover:text-white transition-colors duration-200">Fricción Cero</Link></li>
+            <li><Link href="/#calculadora" className="hover:text-white transition-colors duration-200">Calcular Ganancias</Link></li>
           </ul>
 
           <div className="hidden md:flex items-center gap-3">
             <Link href="/dashboard/login" className="px-4 py-2 text-sm font-medium text-muted hover:text-white transition-colors">
               Iniciar Sesión
             </Link>
-            <Link href="#postularme" className="px-5 py-2.5 bg-accent-violet text-white text-sm font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all duration-300">
+            <Link href="/apply" className="px-5 py-2.5 bg-accent-violet text-white text-sm font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all duration-300">
               Unite como Creador
             </Link>
           </div>
@@ -67,32 +67,32 @@ export default function Header() {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto px-4 pt-6 pb-4 space-y-1" aria-label="Navegación móvil">
-          <a href="#inicio" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-white rounded-xl hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
-            <svg className="w-6 h-6 text-accent-cyan flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-            Inicio
-          </a>
-          <a href="#servicios" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-muted rounded-xl hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
-            <svg className="w-6 h-6 text-accent-violet flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            Servicios
-          </a>
-          <a href="#friccion-cero" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-muted rounded-xl hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
-            <svg className="w-6 h-6 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            Fricción Cero
-          </a>
-          <a href="#calculadora" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-muted rounded-xl hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
-            <svg className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Calcular Ganancias
-          </a>
-        </nav>
-        <div className="px-4 pb-8 pt-2 space-y-3 border-t border-slate-800/50">
-          <Link href="/dashboard/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-3 w-full py-4 text-base font-medium text-muted rounded-xl border border-slate-700/50 hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-            Iniciar Sesión
-          </Link>
-          <a href="#postularme" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 w-full py-4 bg-accent-violet text-white text-base font-bold rounded-xl neon-glow hover:bg-violet-600 active:bg-violet-700 transition-all">
-            Unite como Creador
-          </a>
-        </div>
+            <Link href="/#inicio" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-white rounded-xl hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
+              <svg className="w-6 h-6 text-accent-cyan flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              Inicio
+            </Link>
+            <Link href="/#servicios" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-muted rounded-xl hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
+              <svg className="w-6 h-6 text-accent-violet flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              Servicios
+            </Link>
+            <Link href="/#friccion-cero" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-muted rounded-xl hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
+              <svg className="w-6 h-6 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Fricción Cero
+            </Link>
+            <Link href="/#calculadora" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 px-4 py-4 text-lg font-medium text-muted rounded-xl hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
+              <svg className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Calcular Ganancias
+            </Link>
+          </nav>
+          <div className="px-4 pb-8 pt-2 space-y-3 border-t border-slate-800/50">
+            <Link href="/dashboard/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-3 w-full py-4 text-base font-medium text-muted rounded-xl border border-slate-700/50 hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+              Iniciar Sesión
+            </Link>
+            <Link href="/apply" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 w-full py-4 bg-accent-violet text-white text-base font-bold rounded-xl neon-glow hover:bg-violet-600 active:bg-violet-700 transition-all">
+              Unite como Creador
+            </Link>
+          </div>
       </div>
     </>
   );
