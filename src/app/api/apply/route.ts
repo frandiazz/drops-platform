@@ -18,9 +18,10 @@ export async function POST(request: Request) {
     const { error } = await supabase.from('applications').insert({
       name,
       email,
-      age,
+      age: age || null,
       country,
       socials,
+      service: 'management',
       instagram,
       tiktok,
       twitter,
