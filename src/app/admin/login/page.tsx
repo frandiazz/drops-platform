@@ -25,25 +25,15 @@ export default function AdminLoginPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No se pudo obtener el usuario');
 
-      let { data: profile } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (!profile) {
-        const { error: insertError } = await supabase.from('profiles').upsert({
-          id: user.id,
-          email: user.email,
-          role: 'admin',
-        }, { onConflict: 'id' });
-        if (insertError) throw insertError;
-        profile = { role: 'admin' };
-      }
-
-      if (profile?.role !== 'admin') {
+      if (!profile || profile.role !== 'admin') {
         await supabase.auth.signOut();
-        throw new Error('No tenés permisos de administrador');
+        throw new Error('No tenés permisos de administrador. El administrador debe configurarse desde Supabase.');
       }
 
       router.push('/admin');
