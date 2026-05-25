@@ -12,11 +12,15 @@ export async function POST(request: Request) {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const socialsParts = [instagram, tiktok, twitter, other_social].filter(Boolean);
+    const socials = socialsParts.length > 0 ? socialsParts.join(', ') : `${instagram || ''} ${tiktok || ''}`.trim() || 'No especificado';
+
     const { error } = await supabase.from('applications').insert({
       name,
       email,
       age,
       country,
+      socials,
       instagram,
       tiktok,
       twitter,
