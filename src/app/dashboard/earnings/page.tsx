@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Wallet, ArrowUpRight, Mail } from 'lucide-react';
+import { DollarSign, CreditCard, Wallet, ArrowUpRight, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function EarningsPage() {
@@ -9,6 +9,8 @@ export default function EarningsPage() {
   const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawMsg, setWithdrawMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const totalEarnings = sales
     .filter(s => s.payment_status === 'completed')
@@ -28,6 +30,35 @@ export default function EarningsPage() {
       setLoading(false);
     });
   }, []);
+
+  const handleWithdraw = async () => {
+    setWithdrawMsg(null);
+    if (!withdrawAmount || !withdrawMethod) {
+      setWithdrawMsg({ type: 'error', text: 'Completá el monto y el método de retiro' });
+      return;
+    }
+    setWithdrawing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('No autorizado');
+
+      const res = await fetch('/api/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ amount: withdrawAmount, method: withdrawMethod }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al solicitar retiro');
+
+      setWithdrawMsg({ type: 'success', text: 'Solicitud de retiro enviada con éxito. Te contactaremos pronto.' });
+      setWithdrawAmount('');
+      setWithdrawMethod('');
+    } catch (err: any) {
+      setWithdrawMsg({ type: 'error', text: err.message || 'Error al solicitar retiro' });
+    } finally {
+      setWithdrawing(false);
+    }
+  };
 
   return (
     <div className="p-6 md:p-10">
@@ -149,9 +180,22 @@ export default function EarningsPage() {
           </div>
         )}
 
-        <button className="mt-6 w-full sm:w-auto px-8 py-3 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-2">
+        {withdrawMsg && (
+          <div className={`mt-4 flex items-center gap-2 p-3 rounded-lg text-sm ${
+            withdrawMsg.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+          }`}>
+            {withdrawMsg.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {withdrawMsg.text}
+          </div>
+        )}
+
+        <button
+          onClick={handleWithdraw}
+          disabled={withdrawing}
+          className="mt-6 w-full sm:w-auto px-8 py-3 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <ArrowUpRight className="w-5 h-5" />
-          Solicitar Retiro
+          {withdrawing ? 'Enviando...' : 'Solicitar Retiro'}
         </button>
       </div>
 

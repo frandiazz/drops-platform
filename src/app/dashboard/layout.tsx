@@ -9,6 +9,7 @@ import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Droplets, Repeat
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/content', label: 'Contenido', icon: Upload },
+  { href: '/dashboard/subscriptions', label: 'Suscripciones', icon: Repeat },
   { href: '/dashboard/earnings', label: 'Ganancias', icon: DollarSign },
   { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ];

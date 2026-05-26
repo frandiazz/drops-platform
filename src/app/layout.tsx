@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import HashScroll from '@/components/HashScroll';
 
 export const metadata: Metadata = {
   title: 'Drops | Monetización Inteligente para Creadores',
@@ -44,7 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-grid">
-        <HashScroll />
         {children}
       </body>
     </html>
