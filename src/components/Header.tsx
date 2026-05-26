@@ -34,11 +34,11 @@ export default function Header() {
           </ul>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/dashboard/login" className="px-4 py-2 text-sm font-medium text-muted hover:text-white transition-colors">
+            <Link href="/login" className="px-4 py-2 text-sm font-medium text-muted hover:text-white transition-colors">
               Iniciar Sesión
             </Link>
             <Link href="/unite" className="px-5 py-2.5 bg-accent-violet text-white text-sm font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all duration-300">
-              Unite como Creador
+              Unite
             </Link>
           </div>
 
@@ -85,12 +85,12 @@ export default function Header() {
             </Link>
           </nav>
           <div className="px-4 pb-8 pt-2 space-y-3 border-t border-slate-800/50">
-            <Link href="/dashboard/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-3 w-full py-4 text-base font-medium text-muted rounded-xl border border-slate-700/50 hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-3 w-full py-4 text-base font-medium text-muted rounded-xl border border-slate-700/50 hover:text-white hover:bg-slate-800/50 active:bg-slate-800/70 transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
               Iniciar Sesión
             </Link>
             <Link href="/unite" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 w-full py-4 bg-accent-violet text-white text-base font-bold rounded-xl neon-glow hover:bg-violet-600 active:bg-violet-700 transition-all">
-              Unite como Creador
+              Unite
             </Link>
           </div>
       </div>

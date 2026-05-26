@@ -79,7 +79,7 @@ export default function UnitePage() {
                 ))}
               </ul>
               <Link
-                href="/dashboard/login"
+                href="/crear-cuenta"
                 className="w-full py-4 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-all duration-300 flex items-center justify-center gap-2 border border-slate-700/50"
               >
                 Crear Cuenta Gratis

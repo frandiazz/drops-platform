@@ -59,7 +59,7 @@ function RegisterForm() {
       if (!data.success) throw new Error(data.error);
 
       setSuccess(true);
-      setTimeout(() => router.push('/dashboard/login'), 3000);
+      setTimeout(() => router.push('/login'), 3000);
     } catch (err: any) {
       setError(err.message || 'Error al crear la cuenta');
     } finally {
@@ -76,7 +76,7 @@ function RegisterForm() {
         <h1 className="text-3xl font-extrabold mb-4">¡Cuenta Creada!</h1>
         <p className="text-muted mb-4">Tu cuenta fue creada exitosamente. Ya podés acceder al dashboard.</p>
         <p className="text-sm text-muted mb-8">Redirigiendo al inicio de sesión...</p>
-        <Link href="/dashboard/login" className="text-accent-cyan hover:text-white transition-colors inline-flex items-center gap-2">
+        <Link href="/login" className="text-accent-cyan hover:text-white transition-colors inline-flex items-center gap-2">
           Ir al inicio de sesión <ArrowLeft className="w-4 h-4 rotate-180" />
         </Link>
       </div>
