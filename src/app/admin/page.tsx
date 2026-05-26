@@ -59,13 +59,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    const token = localStorage.getItem('supabase.auth.token');
+    const token = getAccessToken();
     if (!token) return;
-
-    const session = JSON.parse(atob(token.split('.')[1]));
-    const accessToken = session?.sub;
-
-    fetchApplications(accessToken);
+    fetchApplications(token);
   }, [user, filter]);
 
   const getAccessToken = (): string | null => {
