@@ -57,7 +57,7 @@ export default function CrearCuentaPage() {
     <div className="min-h-screen bg-dark flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8 py-2">
-          <ArrowLeft className="w-4 h-4" /> Volver al inicio
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Volver al inicio
         </Link>
 
         <div className="text-center mb-8">
@@ -74,13 +74,13 @@ export default function CrearCuentaPage() {
 
         <form onSubmit={handleSubmit} className="glass rounded-2xl p-8 space-y-5">
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
+            <div role="alert" className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
           )}
 
           <div>
             <label htmlFor="email-crear" className="block text-sm font-medium text-muted mb-2">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
               <input id="email-crear" type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
@@ -91,7 +91,7 @@ export default function CrearCuentaPage() {
           <div>
             <label htmlFor="password-crear" className="block text-sm font-medium text-muted mb-2">Contraseña</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
               <input id="password-crear" type="password" required minLength={6} value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"

@@ -79,13 +79,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1">
+        <nav className="flex-1 px-4 space-y-1" aria-label="Navegación del panel">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? 'page' : undefined}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted hover:text-white hover:bg-slate-800/50 transition-colors"
               >
                 <Icon className="w-5 h-5" />
@@ -116,12 +118,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-slate-800/50">
-        <nav className="flex justify-around py-1">
+        <nav className="flex justify-around py-1" aria-label="Navegación móvil">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
-              <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 px-2 py-3 min-w-[64px] rounded-lg transition-colors ${isActive ? 'text-accent-violet' : 'text-muted hover:text-white'}`}>
+              <Link key={item.href} href={item.href} aria-current={isActive ? 'page' : undefined} className={`flex flex-col items-center gap-0.5 px-2 py-3 min-w-[64px] rounded-lg transition-colors ${isActive ? 'text-accent-violet' : 'text-muted hover:text-white'}`}>
                 <Icon className="w-5 h-5" />
                 <span className="text-[11px] font-medium leading-tight text-center">{item.label}</span>
               </Link>

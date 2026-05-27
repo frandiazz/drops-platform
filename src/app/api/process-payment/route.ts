@@ -78,14 +78,26 @@ export async function POST(request: Request) {
     // Convert USD to ARS
     let rate = 1200;
     try {
-      const rateRes = await fetch('https://dolarapi.com/v1/dolares');
+      const rateRes = await fetch('https://api.bluelytics.com.ar/v2/latest', { signal: AbortSignal.timeout(5000) });
       const rateData = await rateRes.json();
-      if (Array.isArray(rateData)) {
-        const oficial = rateData.find((d: any) => d.casa === 'oficial');
-        const blue = rateData.find((d: any) => d.casa === 'blue');
-        rate = Number(oficial?.venta || blue?.venta || 1200);
+      if (rateData?.oficial?.value_avg) {
+        rate = Number(rateData.oficial.value_avg);
+      } else if (rateData?.blue?.value_avg) {
+        rate = Number(rateData.blue.value_avg);
       }
-    } catch {}
+    } catch {
+      try {
+        const rateRes = await fetch('https://dolarapi.com/v1/dolares', { signal: AbortSignal.timeout(5000) });
+        const rateData = await rateRes.json();
+        if (Array.isArray(rateData)) {
+          const oficial = rateData.find((d: any) => d.casa === 'oficial' || d.nombre === 'Oficial');
+          const blue = rateData.find((d: any) => d.casa === 'blue' || d.nombre === 'Blue');
+          rate = Number(oficial?.venta || oficial?.compra || blue?.venta || blue?.compra || 1200);
+        } else if (rateData?.venta) {
+          rate = Number(rateData.venta);
+        }
+      } catch {}
+    }
 
     const amountARS = Math.round(Number(amount) * rate);
 

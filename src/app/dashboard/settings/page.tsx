@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { User, Mail, Save, Camera, Link as LinkIcon, Instagram, Music2, Twitter, Globe, Shield } from 'lucide-react';
+import { User, Mail, Save, Camera, Link as LinkIcon, Instagram, Music2, Twitter, Globe, Shield, AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [stageName, setStageName] = useState('');
   const [bio, setBio] = useState('');
@@ -303,7 +305,14 @@ export default function SettingsPage() {
         <div className="glass-card rounded-xl p-6 border-red-500/20">
           <h3 className="text-lg font-bold mb-4 text-red-400">Zona de peligro</h3>
           <p className="text-sm text-muted mb-4">Al eliminar tu cuenta, perderás acceso a todo tu contenido y ganancias pendientes.</p>
-          <button className="px-6 py-3 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium">
+          <button
+            onClick={async () => {
+              if (!confirm('¿Estás segura? Esta acción eliminará tu cuenta, todo tu contenido y no podrá deshacerse.')) return;
+              await supabase.auth.signOut();
+              router.push('/');
+            }}
+            className="px-6 py-3 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium"
+          >
             Eliminar cuenta
           </button>
         </div>

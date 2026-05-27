@@ -244,7 +244,7 @@ function CheckoutContent() {
                     <div>
                       <label className="block text-sm font-medium text-muted mb-2">Número de tarjeta</label>
                       <input type="text" inputMode="numeric" value={cardNumber} onChange={(e) => setCardNumber(formatCardNumber(e.target.value))} required
-                        placeholder="5031 7557 3453 0604"
+                        placeholder="XXXX XXXX XXXX XXXX"
                         className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors tracking-wider text-lg" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

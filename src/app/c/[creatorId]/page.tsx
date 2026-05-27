@@ -164,7 +164,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                     <h3 className="text-sm font-semibold truncate leading-tight">{pack.title}</h3>
                     <Link
                       href={checkoutHref}
-                      className="block w-full py-2 bg-accent-violet text-white text-xs font-semibold rounded-lg text-center hover:bg-violet-600 transition-colors"
+                      className="block w-full py-3 bg-accent-violet text-white text-xs font-semibold rounded-lg text-center hover:bg-violet-600 transition-colors"
                     >
                       {pack.type === 'subscription' ? 'Suscribirse' : 'Comprar'}
                     </Link>

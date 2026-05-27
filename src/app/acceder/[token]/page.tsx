@@ -147,8 +147,8 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <h1 className="text-2xl font-bold mb-2">Pago pendiente</h1>
             <p className="text-muted mb-4">Estamos esperando la confirmación de tu pago.</p>
             <div className="glass-card rounded-xl p-4 mb-6">
-              <p className="text-xs text-muted">Email: <span className="text-white">{sale?.buyer_email}</span></p>
-              <p className="text-xs text-muted mt-1">Monto: <span className="text-accent-cyan font-bold">${sale?.amount} USD</span></p>
+              <p className="text-xs text-muted">Email: <span className="text-white">{subscription?.buyer_email || sale?.buyer_email}</span></p>
+              <p className="text-xs text-muted mt-1">Monto: <span className="text-accent-cyan font-bold">${sale?.amount || subscription?.amount} USD</span></p>
             </div>
             <p className="text-xs text-muted">Si ya pagaste, refrescá la página o esperá unos segundos.</p>
           </div>
@@ -168,7 +168,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
               ¡Contenido <span className="gradient-text">disponible</span>!
             </h1>
-            <p className="text-muted">Gracias por tu compra, {sale?.buyer_email}</p>
+            <p className="text-muted">Gracias por tu compra, {subscription?.buyer_email || sale?.buyer_email}</p>
           </div>
 
           {subscription && subscription.status === 'active' && (
