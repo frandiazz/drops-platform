@@ -16,9 +16,18 @@ export default function CrearCuentaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
+    if (!email.includes('@') || !email.includes('.')) {
+      setError('Ingresá un email válido');
+      return;
+    }
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;

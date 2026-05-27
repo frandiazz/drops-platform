@@ -37,25 +37,23 @@ export default function ContentPage() {
 
   const handleFileUpload = useCallback(async (file: File) => {
     setUploading(true);
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: reader.result }),
-        });
-        const data = await res.json();
-        if (data.url) {
-          setUploadedUrls((prev) => [...prev, data.url]);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setUploading(false);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'content');
+      const res = await fetch('/api/upload-file', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setUploadedUrls((prev) => [...prev, data.url]);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
   }, []);
 
   const handleDrop = useCallback(

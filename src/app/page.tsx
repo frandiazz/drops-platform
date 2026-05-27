@@ -29,7 +29,11 @@ export default function Home() {
 
     document.querySelectorAll('.section-fade').forEach((el) => observer.observe(el));
 
-    return () => observer.disconnect();
+    const fallback = setTimeout(() => {
+      document.querySelectorAll('.section-fade').forEach((el) => el.classList.add('visible'));
+    }, 4000);
+
+    return () => { observer.disconnect(); clearTimeout(fallback); };
   }, []);
 
   const faqs = [

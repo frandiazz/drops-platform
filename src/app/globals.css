@@ -178,6 +178,11 @@
 
 .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
 
+@media (max-width: 768px) {
+  .glass { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .glass-card { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

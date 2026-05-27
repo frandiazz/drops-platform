@@ -20,7 +20,8 @@ export default function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const userId = user?.id;
-  const profileUrl = userId ? `https://drops-ly.vercel.app/c/${userId}` : '';
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://drops-ly.vercel.app';
+  const profileUrl = userId ? `${siteUrl}/c/${userId}` : '';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -43,19 +44,15 @@ export default function SettingsPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: reader.result }),
-        });
-        const data = await res.json();
-        if (data.url) setAvatarUrl(data.url);
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'content');
+      const res = await fetch('/api/upload-file', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.url) setAvatarUrl(data.url);
     } catch {
+      // silent
+    } finally {
       setUploading(false);
     }
   };
