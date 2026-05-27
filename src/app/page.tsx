@@ -54,8 +54,8 @@ export default function Home() {
       <main id="main-content">
         {/* HERO */}
         <section id="inicio" className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden" aria-labelledby="hero-heading">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-violet/10 rounded-full blur-[120px] pulse-glow pointer-events-none" aria-hidden="true"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent-cyan/8 rounded-full blur-[100px] pulse-glow pointer-events-none" style={{ animationDelay: '1.5s' }} aria-hidden="true"></div>
+          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-accent-violet/10 rounded-full blur-[80px] pulse-glow pointer-events-none max-md:hidden" aria-hidden="true"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-60 h-60 bg-accent-cyan/8 rounded-full blur-[60px] pulse-glow pointer-events-none max-md:hidden" style={{ animationDelay: '1.5s' }} aria-hidden="true"></div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -108,9 +108,9 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="mt-6 pt-4 border-t border-slate-700/50 grid grid-cols-3 gap-3 text-center">
-                    <div><p className="text-lg font-bold text-accent-cyan">$4.2K</p><p className="text-[10px] text-muted uppercase tracking-wider">Hoy</p></div>
-                    <div><p className="text-lg font-bold text-accent-violet">187</p><p className="text-[10px] text-muted uppercase tracking-wider">Ventas</p></div>
-                    <div><p className="text-lg font-bold text-green-400">98%</p><p className="text-[10px] text-muted uppercase tracking-wider">Éxito</p></div>
+                    <div><p className="text-lg font-bold text-accent-cyan">$4.2K</p><p className="text-xs text-muted uppercase tracking-wider">Hoy</p></div>
+                    <div><p className="text-lg font-bold text-accent-violet">187</p><p className="text-xs text-muted uppercase tracking-wider">Ventas</p></div>
+                    <div><p className="text-lg font-bold text-green-400">98%</p><p className="text-xs text-muted uppercase tracking-wider">Éxito</p></div>
                   </div>
                 </div>
               </div>

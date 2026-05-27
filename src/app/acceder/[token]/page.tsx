@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, Clock, XCircle, Download, Send, Image as ImageIcon, Repeat } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -196,11 +197,11 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {content.media_urls.map((url: string, i: number) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                        className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative">
+                        className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative block">
                         {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                          <video src={url} className="w-full h-full object-cover" controls />
+                          <video src={url} className="w-full h-full object-cover" controls preload="metadata" />
                         ) : (
-                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <Image src={url} alt="Contenido" fill className="object-cover" sizes="(max-width: 640px) 50vw, 33vw" />
                         )}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Download className="w-6 h-6 text-white" />

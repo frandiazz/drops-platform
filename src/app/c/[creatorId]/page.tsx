@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2 } from 'lucide-react';
+import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck } from 'lucide-react';
 
 export default function CreatorProfilePage({ params }: { params: { creatorId: string } }) {
   const [profile, setProfile] = useState<any>(null);
@@ -79,9 +80,9 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Creator Profile */}
           <div className="glass-card rounded-2xl p-8 mb-12 text-center">
-            <div className="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-accent-violet to-accent-cyan flex items-center justify-center text-3xl font-bold mb-4">
+            <div className="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-accent-violet to-accent-cyan flex items-center justify-center text-3xl font-bold mb-4 relative">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={stageName} className="w-full h-full object-cover" />
+                <Image src={avatarUrl} alt={stageName} fill className="object-cover" sizes="96px" />
               ) : (
                 stageName.charAt(0).toUpperCase()
               )}
@@ -123,12 +124,10 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
               </div>
             )}
 
-            <div className="flex items-center justify-center gap-1 text-yellow-400 mb-2">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-current" />
-              ))}
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <BadgeCheck className="w-5 h-5 text-accent-cyan" aria-hidden="true" />
+              <span className="text-xs text-muted">Verificado por Drops</span>
             </div>
-            <p className="text-xs text-muted">Creador verificado por Drops</p>
           </div>
 
           {/* Content Packs */}
@@ -144,7 +143,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                   <Link href={checkoutHref} className="block">
                     <div className="aspect-square bg-dark-light/50 relative">
                       {pack.media_urls?.[0] ? (
-                        <img src={pack.media_urls[0]} alt={pack.title} className="w-full h-full object-cover" />
+                        <Image src={pack.media_urls[0]} alt={pack.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">📦</div>
                       )}

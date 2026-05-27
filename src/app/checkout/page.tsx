@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle, Lock, User, Repeat } from 'lucide-react';
 
 declare global {
@@ -65,22 +66,18 @@ function CheckoutContent() {
 
   useEffect(() => {
     fetch('/api/rate').then(r => r.json()).then(d => setArsRate(d.rate)).catch(() => {});
-    const load = async () => {
-      if (typeof window.MercadoPago !== 'undefined') {
-        setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
-        setMpReady(true);
-        return;
-      }
-      const s = document.createElement('script');
-      s.src = 'https://sdk.mercadopago.com/js/v2';
-      s.onload = () => {
-        setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
-        setMpReady(true);
-      };
-      document.head.appendChild(s);
-    };
-    load();
+    if (typeof window.MercadoPago !== 'undefined') {
+      setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
+      setMpReady(true);
+    }
   }, []);
+
+  const onMpReady = () => {
+    if (typeof window.MercadoPago !== 'undefined') {
+      setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
+      setMpReady(true);
+    }
+  };
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,8 +266,8 @@ function CheckoutContent() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-muted mb-2">Tipo de doc.</label>
-                        <select value={docType} onChange={(e) => setDocType(e.target.value)}
+                        <label htmlFor="docType" className="block text-sm font-medium text-muted mb-2">Tipo de doc.</label>
+                        <select id="docType" value={docType} onChange={(e) => setDocType(e.target.value)}
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors appearance-none">
                           <option value="DNI">DNI</option>
                           <option value="CI">CI</option>
@@ -278,8 +275,8 @@ function CheckoutContent() {
                         </select>
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-muted mb-2">Número de documento</label>
-                        <input type="text" inputMode="numeric" value={docNumber} onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, '').slice(0, 20))} required
+                        <label htmlFor="docNumber" className="block text-sm font-medium text-muted mb-2">Número de documento</label>
+                        <input id="docNumber" type="text" inputMode="numeric" value={docNumber} onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, '').slice(0, 20))} required
                           placeholder="12345678"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
                       </div>
@@ -304,6 +301,7 @@ function CheckoutContent() {
                   </div>
                 </div>
               </form>
+              <Script src="https://sdk.mercadopago.com/js/v2" strategy="afterInteractive" onLoad={onMpReady} />
 
               <div className="flex flex-wrap justify-center gap-6 sm:gap-8 mt-8">
                 <div className="text-center"><Zap className="w-6 h-6 text-accent-cyan mx-auto mb-2" /><p className="text-xs text-muted">Checkout express</p></div>

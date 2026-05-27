@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Check, X, Copy, CheckCircle, XCircle, Clock, ExternalLink, LogOut, ChevronLeft } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface Application {
@@ -137,8 +138,8 @@ export default function AdminPage() {
       <header className="glass border-b border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-muted hover:text-white transition-colors">
-              <ChevronLeft className="w-5 h-5" />
+            <Link href="/" className="text-muted hover:text-white transition-colors" aria-label="Volver">
+              <ChevronLeft className="w-5 h-5" aria-hidden="true" />
             </Link>
             <svg className="w-7 h-7 text-accent-cyan" viewBox="0 0 32 40" fill="none">
               <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropAdmin2)"/>
@@ -182,12 +183,12 @@ export default function AdminPage() {
               {applications.map((app) => {
                 const StatusIcon = statusIcons[app.status];
                 return (
-                  <button key={app.id} onClick={() => setSelected(app)}
-                    className={`w-full glass rounded-xl p-4 text-left transition-all ${selected?.id === app.id ? 'ring-2 ring-accent-violet' : 'hover:bg-slate-800/30'}`}>
+                  <div key={app.id} onClick={() => setSelected(app)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setSelected(app); }}
+                    className={`w-full glass rounded-xl p-4 text-left transition-all cursor-pointer ${selected?.id === app.id ? 'ring-2 ring-accent-violet' : 'hover:bg-slate-800/30'}`}>
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0 relative">
                         {app.photo_urls?.[0] ? (
-                          <img src={app.photo_urls[0]} alt="" className="w-full h-full object-cover" />
+                          <Image src={app.photo_urls[0]} alt="" fill className="object-cover" sizes="56px" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted">
                             {app.name?.charAt(0)}
@@ -206,7 +207,7 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
