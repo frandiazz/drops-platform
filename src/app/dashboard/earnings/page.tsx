@@ -4,9 +4,14 @@ import { useState, useEffect } from 'react';
 import { DollarSign, CreditCard, Wallet, ArrowUpRight, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+const PAGE_SIZE = 20;
+
 export default function EarningsPage() {
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
@@ -16,20 +21,41 @@ export default function EarningsPage() {
     .filter(s => s.payment_status === 'completed')
     .reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
 
+  const fetchSales = async (pageNum: number, append: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const from = pageNum * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*, content:content_id(title)', { count: 'exact' })
+      .eq('creator_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) return;
+    if (append) {
+      setSales(prev => [...prev, ...(data || [])]);
+    } else {
+      setSales(data || []);
+    }
+    setHasMore((data || []).length === PAGE_SIZE);
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-
-      const { data } = await supabase
-        .from('sales')
-        .select('*, content:content_id(title)')
-        .eq('creator_id', session.user.id)
-        .order('created_at', { ascending: false });
-
-      if (data) setSales(data);
-      setLoading(false);
-    });
+    setLoading(true);
+    fetchSales(0, false).finally(() => setLoading(false));
   }, []);
+
+  const loadMore = async () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    setLoadingMore(true);
+    await fetchSales(nextPage, true);
+    setLoadingMore(false);
+  };
 
   const handleWithdraw = async () => {
     setWithdrawMsg(null);
@@ -78,7 +104,14 @@ export default function EarningsPage() {
 
       {/* Sales List */}
       {loading ? (
-        <div className="text-center py-8 text-muted">Cargando ventas...</div>
+        <div className="glass-card rounded-xl p-6 mb-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-5 bg-slate-700/30 rounded w-40" />
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 bg-slate-700/20 rounded-xl" />
+            ))}
+          </div>
+        </div>
       ) : sales.length === 0 ? (
         <div className="glass-card rounded-xl p-6 mb-8 text-center">
           <DollarSign className="w-8 h-8 text-muted mx-auto mb-3" />
@@ -121,6 +154,15 @@ export default function EarningsPage() {
               </div>
             ))}
           </div>
+          {hasMore && (
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="mt-6 w-full py-3 text-sm text-muted hover:text-white border border-slate-700/50 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? 'Cargando...' : 'Cargar más ventas'}
+            </button>
+          )}
         </div>
       )}
 

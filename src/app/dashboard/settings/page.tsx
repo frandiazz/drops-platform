@@ -104,7 +104,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-6">
             <div className="relative w-20 h-20 rounded-full overflow-hidden bg-dark-light/80 border border-slate-700/50 flex-shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-muted">
                   {stageName?.charAt(0)?.toUpperCase() || '?'}
@@ -255,7 +255,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4 p-4 rounded-lg bg-dark-light/50">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-dark-light/80 flex-shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted">{stageName?.charAt(0)?.toUpperCase() || '?'}</div>
               )}

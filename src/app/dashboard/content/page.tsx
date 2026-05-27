@@ -347,7 +347,7 @@ export default function ContentPage() {
               <div key={pack.id} className="p-4 sm:p-6 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {pack.media_urls?.[0] ? (
-                    <img src={pack.media_urls[0]} alt="" className="w-full h-full object-cover" />
+                    <img src={pack.media_urls[0]} alt="" loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-muted" />
                   )}

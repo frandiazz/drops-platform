@@ -229,7 +229,7 @@ export default function AdminPage() {
                 <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
                   {selected.photo_urls?.map((url, i) => (
                     <div key={i} className="w-24 h-32 rounded-xl overflow-hidden flex-shrink-0 border border-slate-700/50">
-                      <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                      <img src={url} alt={`Foto ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>

@@ -219,7 +219,7 @@ export default function ApplyPage() {
                   <div key={i}>
                     {photoUrls[i] ? (
                       <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-slate-700/50">
-                        <img src={photoUrls[i]} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                        <img src={photoUrls[i]} alt={`Foto ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                         <button type="button" onClick={() => removePhoto(i)} aria-label="Eliminar foto"
                           className="absolute top-1 right-1 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors">
                           <X className="w-4 h-4 text-white" />

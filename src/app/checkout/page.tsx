@@ -157,7 +157,7 @@ function CheckoutContent() {
                   <div className="flex items-center gap-3 pb-4 border-b border-slate-700/30">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-dark-light/80 flex-shrink-0">
                       {creatorAvatar ? (
-                        <img src={creatorAvatar} alt={creatorName} className="w-full h-full object-cover" />
+                        <img src={creatorAvatar} alt={creatorName} loading="lazy" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-sm font-bold text-muted">{creatorName.charAt(0).toUpperCase()}</div>
                       )}
