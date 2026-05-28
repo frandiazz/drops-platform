@@ -25,8 +25,8 @@ export default function PrivacyPage() {
               <h2 className="text-xl font-bold text-white mb-4">1. Información que Recopilamos</h2>
               <p>Recopilamos la siguiente información:</p>
               <ul className="list-disc pl-6 mt-2 space-y-2">
-                <li><strong>Creadores:</strong> Nombre artístico, email, links de redes sociales, información de verificación de identidad (KYC).</li>
-                <li><strong>Compradores:</strong> Email (para entrega de contenido), datos de pago (procesados por terceros como Takenos y Mercado Pago).</li>
+                <li><strong>Creadores:</strong> Nombre artístico, email, links de redes sociales, información de verificación de identidad.</li>
+                <li><strong>Compradores:</strong> Email (para referencia de compra), datos de pago (procesados por Mercado Pago).</li>
               </ul>
             </section>
 
@@ -45,7 +45,7 @@ export default function PrivacyPage() {
               <h2 className="text-xl font-bold text-white mb-4">3. Compartición de Datos</h2>
               <p>No vendemos ni compartimos tu información personal con terceros para fines de marketing. Podemos compartir información con:</p>
               <ul className="list-disc pl-6 mt-2 space-y-2">
-                <li><strong>Procesadores de pago:</strong> Takenos, Mercado Pago (para procesar transacciones).</li>
+                <li><strong>Procesadores de pago:</strong> Mercado Pago (para procesar transacciones).</li>
                 <li><strong>Servicios de hosting:</strong> Vercel, Supabase, Cloudinary (para operar la Plataforma).</li>
                 <li><strong>Autoridades:</strong> Si es requerido por ley.</li>
               </ul>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2 className="text-xl font-bold text-white mb-4">8. Contacto</h2>
-              <p>Para consultas sobre privacidad: <a href="mailto:DropsDrops2005@gmail.com" className="text-accent-cyan hover:underline">DropsDrops2005@gmail.com</a></p>
+              <p>Para consultas sobre privacidad: <span className="text-accent-cyan">DropsDrops2005@gmail.com</span></p>
             </section>
           </div>
         </div>

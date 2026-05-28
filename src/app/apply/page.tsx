@@ -189,19 +189,19 @@ export default function ApplyPage() {
                   <label className="text-xs text-muted mb-1 block">Instagram</label>
                   <input name="instagram" value={form.instagram} onChange={handleChange}
                     className="w-full h-11 rounded-lg bg-dark-light/80 border border-slate-700/50 px-3 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-sm"
-                    placeholder="usuario" />
+                    placeholder="Tu usuario de Instagram" />
                 </div>
                 <div>
                   <label className="text-xs text-muted mb-1 block">TikTok</label>
                   <input name="tiktok" value={form.tiktok} onChange={handleChange}
                     className="w-full h-11 rounded-lg bg-dark-light/80 border border-slate-700/50 px-3 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-sm"
-                    placeholder="usuario" />
+                    placeholder="Tu usuario de TikTok" />
                 </div>
                 <div>
                   <label className="text-xs text-muted mb-1 block">X / Twitter</label>
                   <input name="twitter" value={form.twitter} onChange={handleChange}
                     className="w-full h-11 rounded-lg bg-dark-light/80 border border-slate-700/50 px-3 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-sm"
-                    placeholder="usuario" />
+                    placeholder="Tu usuario de X" />
                 </div>
               </div>
               <div className="mt-3">

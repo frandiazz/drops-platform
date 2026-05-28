@@ -1,6 +1,17 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 
 export default function Footer() {
+  const [copied, setCopied] = useState(false);
+
+  const copyEmail = () => {
+    navigator.clipboard.writeText('DropsDrops2005@gmail.com');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <footer className="border-t border-slate-800/50 bg-dark-light/30" role="contentinfo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -17,9 +28,10 @@ export default function Footer() {
               La plataforma de monetización y management para creadores de contenido y modelos de IA. Maximizamos tus ingresos con tecnología de vanguardia.
             </p>
             <div className="flex gap-4 mt-6">
-              <a href="mailto:DropsDrops2005@gmail.com" className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all duration-200" aria-label="Contacto por email">
+              <button onClick={copyEmail} className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all duration-200" aria-label="Copiar email de contacto">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-              </a>
+              </button>
+              {copied && <span className="text-xs text-green-400 self-center">Email copiado!</span>}
             </div>
           </div>
 
@@ -39,8 +51,8 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link href="/terminos" className="block py-2 text-sm text-muted hover:text-white transition-colors">Términos para Creadores</Link></li>
               <li><Link href="/privacidad" className="block py-2 text-sm text-muted hover:text-white transition-colors">Políticas de Privacidad</Link></li>
-              <li><a href="mailto:DropsDrops2005@gmail.com?subject=DMCA" className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</a></li>
-              <li><a href="mailto:DropsDrops2005@gmail.com" className="block py-2 text-sm text-muted hover:text-white transition-colors">Contacto</a></li>
+              <li><button onClick={copyEmail} className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</button></li>
+              <li><button onClick={copyEmail} className="block py-2 text-sm text-muted hover:text-white transition-colors">Contacto</button></li>
             </ul>
           </div>
         </div>

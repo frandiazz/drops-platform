@@ -237,7 +237,7 @@ export default function EarningsPage() {
               className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors appearance-none"
             >
               <option value="" disabled>Seleccioná un método</option>
-              <option value="bank">Transferencia bancaria (Lead Bank)</option>
+              <option value="bank">Transferencia bancaria</option>
               <option value="crypto">Criptomonedas (USDT TRC20)</option>
               <option value="mp">Mercado Pago (Argentina)</option>
             </select>
@@ -292,7 +292,7 @@ export default function EarningsPage() {
       {/* Payment Methods Info */}
       <div className="glass-card rounded-xl p-6">
         <h3 className="text-lg font-bold mb-4">Cómo cobrás tus ventas</h3>
-        <p className="text-xs text-muted mb-4">Tus clientes pagan con tarjeta vía Mercado Pago (ARS). El cobro se acredita en tu cuenta de Mercado Pago. Después podés transferirlo a tu banco.</p>
+        <p className="text-xs text-muted mb-4">Tus clientes pagan con tarjeta vía Mercado Pago (ARS). Después solicitás un retiro manual y te transferimos a tu cuenta de Mercado Pago.</p>
 
         <h4 className="text-sm font-semibold text-muted mb-3">Tarjetas aceptadas para cobrar</h4>
         <div className="flex items-center gap-5 flex-wrap text-slate-400 mb-6">
@@ -330,7 +330,7 @@ export default function EarningsPage() {
             <Wallet className="w-6 h-6 text-accent-violet flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold">Retiro a Mercado Pago</p>
-              <p className="text-xs text-muted">Recibí los ARS en tu cuenta de Mercado Pago y transferí a tu banco</p>
+              <p className="text-xs text-muted">Recibí los ARS en tu cuenta de Mercado Pago al aprobarse el retiro</p>
             </div>
           </div>
         </div>

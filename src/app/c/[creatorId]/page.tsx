@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck } from 'lucide-react';
+import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck, Link as LinkIcon } from 'lucide-react';
 
 export default function CreatorProfilePage({ params }: { params: { creatorId: string } }) {
   const [profile, setProfile] = useState<any>(null);
@@ -184,12 +184,12 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
               <div>
                 <Shield className="w-8 h-8 text-green-400 mx-auto mb-2" />
                 <p className="text-sm font-semibold mb-1">Pago Seguro</p>
-                <p className="text-xs text-muted">Múltiples métodos de pago</p>
+                <p className="text-xs text-muted">Visa, Mastercard, Amex</p>
               </div>
               <div>
-                <Mail className="w-8 h-8 text-accent-violet mx-auto mb-2" />
-                <p className="text-sm font-semibold mb-1">Entrega Automática</p>
-                <p className="text-xs text-muted">Contenido por email al instante</p>
+                <LinkIcon className="w-8 h-8 text-accent-violet mx-auto mb-2" />
+                <p className="text-sm font-semibold mb-1">Acceso Inmediato</p>
+                <p className="text-xs text-muted">Contenido disponible al instante</p>
               </div>
             </div>
           </div>

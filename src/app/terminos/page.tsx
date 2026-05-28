@@ -41,7 +41,7 @@ export default function TermsPage() {
               <h2 className="text-xl font-bold text-white mb-4">3. Pagos y Distribución de Ingresos</h2>
               <p>Los pagos se distribuyen según el porcentaje acordado según el nivel de servicio seleccionado. Drops retiene su comisión antes de transferir el restante al creador.</p>
               <p className="mt-2"><strong>Retiros:</strong> Los creadores pueden solicitar retiros de sus ganancias. Los fondos se acreditan entre 24 y 48 horas hábiles después de la solicitud. El monto mínimo de retiro es de $50 USD.</p>
-              <p className="mt-2"><strong>Métodos de pago:</strong> Transferencia bancaria (cuenta internacional Lead Bank), criptomonedas (USDT TRC20), Mercado Pago (Argentina).</p>
+              <p className="mt-2"><strong>Métodos de pago:</strong> Disponibles próximamente.</p>
             </section>
 
             <section>
@@ -86,7 +86,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-xl font-bold text-white mb-4">10. DMCA y Contenido Ilegal</h2>
-              <p>Drops respeta los derechos de propiedad intelectual. Si considerás que tu contenido ha sido utilizado de manera que constituye una violación de derechos de autor, contactanos a DropsDrops2005@gmail.com con la información requerida por la DMCA.</p>
+              <p>Drops respeta los derechos de propiedad intelectual. Si considerás que tu contenido ha sido utilizado de manera que constituye una violación de derechos de autor, contactanos a <span className="text-accent-cyan">DropsDrops2005@gmail.com</span> con la información requerida por la DMCA.</p>
             </section>
 
             <section>
@@ -96,7 +96,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-xl font-bold text-white mb-4">12. Contacto</h2>
-              <p>Para consultas sobre estos Términos: <a href="mailto:DropsDrops2005@gmail.com" className="text-accent-cyan hover:underline">DropsDrops2005@gmail.com</a></p>
+              <p>Para consultas sobre estos Términos: <span className="text-accent-cyan">DropsDrops2005@gmail.com</span></p>
             </section>
           </div>
         </div>

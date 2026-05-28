@@ -9,6 +9,7 @@ import { TrendingUp, Users, DollarSign, Package, ArrowUpRight, Repeat } from 'lu
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [statsData, setStatsData] = useState<typeof defaultStats | null>(null);
+  const [copied, setCopied] = useState(false);
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://drops-ly.vercel.app';
 
   const defaultStats = { earnings: 0, sales: 0, content: 0, buyers: 0, subscribers: 0 };
@@ -130,10 +131,10 @@ export default function DashboardPage() {
                 {siteUrl.replace('https://','').replace('http://','')}/c/{user?.id || 'tu-usuario'}
               </code>
               <button
-                onClick={() => navigator.clipboard.writeText(`${siteUrl}/c/${user?.id || 'tu-usuario'}`)}
+                onClick={() => { navigator.clipboard.writeText(`${siteUrl}/c/${user?.id || 'tu-usuario'}`); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                 className="px-4 py-3 min-h-[44px] bg-accent-violet/20 text-accent-violet rounded-lg hover:bg-accent-violet/30 transition-colors text-sm font-medium"
               >
-                Copiar
+                {copied ? 'Copiado!' : 'Copiar'}
               </button>
             </div>
           </div>

@@ -98,7 +98,7 @@ export default function Home() {
                       <span className="ml-auto text-accent-cyan font-bold">$29.99</span>
                     </div>
                     <div className="space-y-3">
-                      <div className="h-10 rounded-lg bg-dark-light/80 border border-slate-700/50 flex items-center px-3 text-sm text-muted">tu@email.com</div>
+                      <div className="h-10 rounded-lg bg-dark-light/80 border border-slate-700/50 flex items-center px-3 text-sm text-muted">DNI 12345678</div>
                       <div className="h-10 rounded-lg bg-dark-light/80 border border-slate-700/50 flex items-center px-3 text-sm text-muted">**** **** **** 4242</div>
                     </div>
                     <button className="w-full py-3 bg-accent-violet rounded-lg font-semibold text-sm neon-glow">Pagar en 10 segundos</button>
@@ -230,7 +230,7 @@ export default function Home() {
 
               <div className="space-y-12 md:space-y-16">
                 {[
-                  { n: 1, title: 'Registro y Verificación KYC', desc: 'Te registrás en Drops y verificás tu identidad de forma segura. Nuestro proceso KYC protege a toda la comunidad.', color: 'bg-accent-violet', shadow: 'shadow-violet-500/30' },
+                  { n: 1, title: 'Registro y Verificación', desc: 'Te registrás en Drops y verificás tu identidad de forma segura. Nuestro proceso de verificación protege a toda la comunidad.', color: 'bg-accent-violet', shadow: 'shadow-violet-500/30' },
                   { n: 2, title: 'Auditoría y Gestión de Redes', desc: 'Nuestro equipo de marketing audita tus perfiles y comienza a administrar tus redes para maximizar tu viralidad.', color: 'bg-gradient-to-br from-accent-violet to-accent-cyan', shadow: 'shadow-cyan-500/20' },
                   { n: 3, title: 'Subí tu Contenido y Generá Links', desc: 'Subís tus packs de contenido exclusivo a tu panel y generás links de cobro express únicos para tu audiencia.', color: 'bg-gradient-to-br from-accent-cyan to-green-400', shadow: 'shadow-green-500/20' },
                   { n: 4, title: 'Cobros Automáticos y Retiro', desc: 'Tus fans compran en un click, el contenido se entrega al instante mediante enlaces encriptados, y vos retirás tus ganancias.', color: 'bg-green-400', shadow: 'shadow-green-500/30' },

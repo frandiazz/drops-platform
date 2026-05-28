@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Mail, Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
 
 export default function CrearCuentaPage() {
   const router = useRouter();
@@ -12,7 +12,6 @@ export default function CrearCuentaPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +34,9 @@ export default function CrearCuentaPage() {
       if (data.session) {
         router.push('/dashboard');
       } else {
-        setSuccess(true);
+        // If no session (email confirmation enabled), sign in directly
+        await supabase.auth.signInWithPassword({ email, password });
+        router.push('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Error al crear la cuenta');
@@ -43,24 +44,6 @@ export default function CrearCuentaPage() {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-dark flex items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-6">
-            <CheckCircle className="w-10 h-10 text-green-400" />
-          </div>
-          <h1 className="text-2xl font-extrabold mb-4">Cuenta creada</h1>
-          <p className="text-muted mb-2">Revisá tu email para confirmar la cuenta.</p>
-          <p className="text-sm text-muted mb-8">Si no encuentras el correo, revisá spam.</p>
-          <Link href="/login" className="inline-flex items-center gap-2 text-accent-cyan hover:text-white transition-colors font-medium">
-            Ir a iniciar sesión
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center px-4">

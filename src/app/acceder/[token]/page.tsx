@@ -151,7 +151,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <Clock className="w-16 h-16 text-red-400 mx-auto mb-6" />
             <h1 className="text-2xl font-bold mb-2">Suscripción expirada</h1>
             <p className="text-muted mb-4">Tu suscripción venció el {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
-            <p className="text-xs text-muted mb-6">Si querés renovar, contactanos a DropsDrops2005@gmail.com.</p>
+            <p className="text-xs text-muted mb-6"><button onClick={() => { navigator.clipboard.writeText('DropsDrops2005@gmail.com'); }} className="text-accent-cyan hover:underline cursor-pointer">Contactanos</button> para renovar.</p>
           </div>
         </main>
         <Footer />
@@ -169,8 +169,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <h1 className="text-2xl font-bold mb-2">Pago pendiente</h1>
             <p className="text-muted mb-4">Estamos esperando la confirmación de tu pago.</p>
             <div className="glass-card rounded-xl p-4 mb-6">
-              <p className="text-xs text-muted">Email: <span className="text-white">{subscription?.buyer_email || sale?.buyer_email}</span></p>
-              <p className="text-xs text-muted mt-1">Monto: <span className="text-accent-cyan font-bold">${sale?.amount || subscription?.amount} USD</span></p>
+              <p className="text-xs text-muted">Monto: <span className="text-accent-cyan font-bold">${sale?.amount || subscription?.amount} USD</span></p>
             </div>
             <p className="text-xs text-muted">Si ya pagaste, refrescá la página o esperá unos segundos.</p>
           </div>
@@ -190,7 +189,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
               ¡Contenido <span className="gradient-text">disponible</span>!
             </h1>
-            <p className="text-muted">Gracias por tu compra, {subscription?.buyer_email || sale?.buyer_email}</p>
+            <p className="text-muted">Gracias por tu compra</p>
           </div>
 
           {subscription && subscription.status === 'active' && !isExpired && (
@@ -272,7 +271,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 Próximo vencimiento: {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             )}
-            <p className="text-xs text-muted">¿Dudas? Escribinos a DropsDrops2005@gmail.com</p>
+            <p className="text-xs text-muted">¿Dudas? <button onClick={() => { navigator.clipboard.writeText('DropsDrops2005@gmail.com'); }} className="text-accent-cyan hover:underline cursor-pointer">Contactanos</button></p>
           </div>
         </div>
       </main>
