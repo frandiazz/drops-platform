@@ -1,5 +1,27 @@
 import { NextResponse } from 'next/server';
 
+async function fetchRate(): Promise<number> {
+  let rate = 1200;
+  try {
+    const rateRes = await fetch('https://api.bluelytics.com.ar/v2/latest', { signal: AbortSignal.timeout(5000) });
+    const rateData = await rateRes.json();
+    if (rateData?.oficial?.value_avg) return Number(rateData.oficial.value_avg);
+    if (rateData?.blue?.value_avg) return Number(rateData.blue.value_avg);
+  } catch {
+    try {
+      const rateRes = await fetch('https://dolarapi.com/v1/dolares', { signal: AbortSignal.timeout(5000) });
+      const rateData = await rateRes.json();
+      if (Array.isArray(rateData)) {
+        const oficial = rateData.find((d: any) => d.casa === 'oficial' || d.nombre === 'Oficial');
+        const blue = rateData.find((d: any) => d.casa === 'blue' || d.nombre === 'Blue');
+        return Number(oficial?.venta || oficial?.compra || blue?.venta || blue?.compra || 1200);
+      }
+      if (rateData?.venta) return Number(rateData.venta);
+    } catch {}
+  }
+  return rate;
+}
+
 export async function POST(request: Request) {
   try {
     const body = JSON.parse(await request.text());
@@ -23,49 +45,87 @@ export async function POST(request: Request) {
     const creatorEarnings = amount - commission;
 
     const { data: sale, error: saleError } = await supabase.from('sales').insert({
-      content_id,
-      creator_id,
-      buyer_email,
-      amount,
-      commission,
+      content_id, creator_id, buyer_email, amount, commission,
       creator_earnings: creatorEarnings,
-      payment_method: 'mercadopago',
-      payment_status: 'pending',
+      payment_method: 'mercadopago', payment_status: 'pending',
     }).select().single();
 
     if (saleError || !sale) {
       return NextResponse.json({ error: saleError?.message || 'Failed to create sale' }, { status: 500 });
     }
 
-    let subscription = null;
+    const amountARS = Math.round(Number(amount) * await fetchRate());
+
     if (content_type === 'subscription') {
+      // Create subscription record
       const { data: sub, error: subError } = await supabase.from('subscriptions').insert({
-        creator_id,
-        content_id,
-        buyer_email,
-        amount,
-        status: 'pending',
+        creator_id, content_id, buyer_email, amount, status: 'pending',
       }).select().single();
 
       if (subError) {
-        console.error('Failed to create subscription:', subError);
-      } else {
-        subscription = sub;
+        return NextResponse.json({ error: subError.message }, { status: 500 });
       }
+
+      // Create MP preapproval (recurring)
+      const payer: any = { email: buyer_email };
+      if (identification?.number) {
+        payer.identification = { type: identification.type || 'DNI', number: identification.number };
+      }
+
+      const preapprovalRes = await fetch('https://api.mercadopago.com/preapproval', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${mpAccessToken}`,
+        },
+        body: JSON.stringify({
+          reason: title || 'Suscripción en Drops',
+          external_reference: sub.id,
+          payer_email: buyer_email,
+          card_token_id: token,
+          auto_recurring: {
+            frequency: 1,
+            frequency_type: 'months',
+            transaction_amount: amountARS,
+            currency_id: 'ARS',
+          },
+          back_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://drops-ly.vercel.app'}/acceder/${sub.access_token}`,
+          status: 'authorized',
+        }),
+      });
+
+      const preapprovalData = await preapprovalRes.json();
+
+      if (preapprovalData.id) {
+        // Save preapproval ID
+        const { error: updateError } = await supabase.from('subscriptions')
+          .update({ status: 'active', mp_preapproval_id: preapprovalData.id })
+          .eq('id', sub.id);
+
+        if (!updateError) {
+          // Also mark the initial sale as completed
+          await supabase.from('sales')
+            .update({ payment_status: 'completed', mp_payment_id: `preapproval_${preapprovalData.id}` })
+            .eq('id', sale.id);
+
+          return NextResponse.json({ success: true, access_token: sub.access_token });
+        }
+      }
+
+      // Preapproval failed — fall back to one-time payment
+      console.error('Preapproval failed, falling back:', preapprovalData);
     }
 
+    // One-time payment (or subscription fallback)
     const paymentPayload: any = {
       token,
-      transaction_amount: Number(amount),
+      transaction_amount: amountARS,
       description: title || 'Compra en Drops',
       installments: 1,
       payment_method_id: payment_method_id || 'master',
       payer: { email: buyer_email },
-      metadata: {
-        sale_id: sale.id,
-        content_type: content_type || 'one_time',
-        ...(subscription ? { subscription_id: subscription.id } : {}),
-      },
+      currency_id: 'ARS',
+      metadata: { sale_id: sale.id, content_type: content_type || 'one_time' },
     };
 
     if (identification?.number) {
@@ -75,38 +135,9 @@ export async function POST(request: Request) {
       };
     }
 
-    // Convert USD to ARS
-    let rate = 1200;
-    try {
-      const rateRes = await fetch('https://api.bluelytics.com.ar/v2/latest', { signal: AbortSignal.timeout(5000) });
-      const rateData = await rateRes.json();
-      if (rateData?.oficial?.value_avg) {
-        rate = Number(rateData.oficial.value_avg);
-      } else if (rateData?.blue?.value_avg) {
-        rate = Number(rateData.blue.value_avg);
-      }
-    } catch {
-      try {
-        const rateRes = await fetch('https://dolarapi.com/v1/dolares', { signal: AbortSignal.timeout(5000) });
-        const rateData = await rateRes.json();
-        if (Array.isArray(rateData)) {
-          const oficial = rateData.find((d: any) => d.casa === 'oficial' || d.nombre === 'Oficial');
-          const blue = rateData.find((d: any) => d.casa === 'blue' || d.nombre === 'Blue');
-          rate = Number(oficial?.venta || oficial?.compra || blue?.venta || blue?.compra || 1200);
-        } else if (rateData?.venta) {
-          rate = Number(rateData.venta);
-        }
-      } catch {}
-    }
-
-    const amountARS = Math.round(Number(amount) * rate);
-
-    paymentPayload.transaction_amount = amountARS;
-    paymentPayload.currency_id = 'ARS';
-
     const idempotencyKey = crypto.randomUUID();
 
-    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+    const mpRes = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,19 +147,28 @@ export async function POST(request: Request) {
       body: JSON.stringify(paymentPayload),
     });
 
-    const mpData = await mpResponse.json();
+    const mpData = await mpRes.json();
 
     if (mpData.status === 'approved') {
       await supabase.from('sales')
         .update({ payment_status: 'completed', mp_payment_id: mpData.id?.toString() })
         .eq('id', sale.id);
 
-      if (subscription) {
-        await supabase.from('subscriptions')
-          .update({ status: 'active' })
-          .eq('id', subscription.id);
+      // If subscription fallback, activate it too
+      if (content_type === 'subscription') {
+        const { data: pendingSub } = await supabase.from('subscriptions')
+          .select('id, access_token')
+          .eq('buyer_email', buyer_email)
+          .eq('content_id', content_id)
+          .eq('status', 'pending')
+          .maybeSingle();
 
-        return NextResponse.json({ success: true, access_token: subscription.access_token, payment_id: mpData.id });
+        if (pendingSub) {
+          await supabase.from('subscriptions')
+            .update({ status: 'active' })
+            .eq('id', pendingSub.id);
+          return NextResponse.json({ success: true, access_token: pendingSub.access_token, payment_id: mpData.id });
+        }
       }
 
       return NextResponse.json({ success: true, access_token: sale.access_token, payment_id: mpData.id });

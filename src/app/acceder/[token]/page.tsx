@@ -135,8 +135,29 @@ export default function AccessPage({ params }: { params: { token: string } }) {
     );
   }
 
-  const isCompleted = subscription ? subscription.status === 'active' : sale?.payment_status === 'completed';
+  const now = new Date();
+  const isExpired = subscription?.status === 'active' && subscription?.current_period_end && new Date(subscription.current_period_end) < now;
+  const isAboutToExpire = subscription?.status === 'active' && subscription?.current_period_end &&
+    !isExpired && (new Date(subscription.current_period_end).getTime() - now.getTime()) < 3 * 24 * 60 * 60 * 1000;
+  const isCompleted = subscription ? (subscription.status === 'active' && !isExpired) : sale?.payment_status === 'completed';
   const status = subscription ? subscription.status : sale?.payment_status;
+
+  if (isExpired) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <Clock className="w-16 h-16 text-red-400 mx-auto mb-6" />
+            <h1 className="text-2xl font-bold mb-2">Suscripción expirada</h1>
+            <p className="text-muted mb-4">Tu suscripción venció el {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+            <p className="text-xs text-muted mb-6">Si querés renovar, contactanos a DropsDrops2005@gmail.com.</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   if (!isCompleted) {
     return (
@@ -172,13 +193,18 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <p className="text-muted">Gracias por tu compra, {subscription?.buyer_email || sale?.buyer_email}</p>
           </div>
 
-          {subscription && subscription.status === 'active' && (
-            <div className="glass-card rounded-xl p-4 mb-6 flex items-center gap-3 bg-cyan-500/10 border border-cyan-500/30">
-              <Repeat className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+          {subscription && subscription.status === 'active' && !isExpired && (
+            <div className={`glass-card rounded-xl p-4 mb-6 flex items-center gap-3 border ${isAboutToExpire ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-cyan-500/10 border-cyan-500/30'}`}>
+              <Repeat className={`w-5 h-5 flex-shrink-0 ${isAboutToExpire ? 'text-yellow-400' : 'text-cyan-400'}`} />
               <div>
-                <p className="text-sm font-semibold text-cyan-400">Suscripción activa</p>
+                <p className={`text-sm font-semibold ${isAboutToExpire ? 'text-yellow-400' : 'text-cyan-400'}`}>
+                  {isAboutToExpire ? 'Suscripción por vencer' : 'Suscripción activa'}
+                </p>
                 <p className="text-xs text-muted">
-                  Vigente hasta {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  {isAboutToExpire
+                    ? `Vence el ${new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}. Renová pronto para no perder el acceso.`
+                    : `Vigente hasta ${new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}`
+                  }
                 </p>
               </div>
             </div>

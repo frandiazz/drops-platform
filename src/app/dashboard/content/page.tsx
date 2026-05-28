@@ -20,6 +20,7 @@ export default function ContentPage() {
   const [isActive, setIsActive] = useState(true);
   const [contentType, setContentType] = useState<'one_time' | 'subscription'>('one_time');
   const [subscriptionPrice, setSubscriptionPrice] = useState('25');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -141,6 +142,14 @@ export default function ContentPage() {
     await loadPacks();
     setShowForm(false);
     resetForm();
+  };
+
+  const handleDelete = async (packId: string) => {
+    if (!confirm('¿Eliminar este pack? Los compradores perderán el acceso al contenido.')) return;
+    setDeleting(packId);
+    await supabase.from('content').delete().eq('id', packId);
+    setPacks(prev => prev.filter(p => p.id !== packId));
+    setDeleting(null);
   };
 
   return (
@@ -366,6 +375,10 @@ export default function ContentPage() {
                   <p className="text-xs text-muted">{pack.is_active ? 'Activo' : 'Inactivo'}</p>
                   <button onClick={() => openEditForm(pack)} className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">
                     <Pencil className="w-3 h-3" /> Editar
+                  </button>
+                  <button onClick={() => handleDelete(pack.id)} disabled={deleting === pack.id}
+                    className="mt-1 flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50">
+                    <Trash2 className="w-3 h-3" /> {deleting === pack.id ? 'Eliminando...' : 'Eliminar'}
                   </button>
                 </div>
               </div>

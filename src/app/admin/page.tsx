@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Check, X, Copy, CheckCircle, XCircle, Clock, ExternalLink, LogOut, ChevronLeft } from 'lucide-react';
+import { Check, X, Copy, CheckCircle, XCircle, Clock, ExternalLink, LogOut, ChevronLeft, DollarSign } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -148,6 +148,9 @@ export default function AdminPage() {
             <h1 className="text-lg font-bold">Panel Admin</h1>
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/admin/withdrawals" className="text-sm text-accent-cyan hover:text-white transition-colors flex items-center gap-1.5 py-2">
+              <DollarSign className="w-4 h-4" /> Retiros
+            </Link>
             <span className="text-sm text-muted hidden sm:block">{user?.email}</span>
             <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors py-2">
               <LogOut className="w-4 h-4" /> Salir

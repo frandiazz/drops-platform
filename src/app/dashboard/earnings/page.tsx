@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Wallet, ArrowUpRight, Mail, CheckCircle, AlertCircle } from 'lucide-react';
+import { DollarSign, CreditCard, Wallet, ArrowUpRight, Mail, CheckCircle, AlertCircle, TrendingDown, PiggyBank } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const PAGE_SIZE = 20;
@@ -12,6 +12,7 @@ export default function EarningsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [withdrawnTotal, setWithdrawnTotal] = useState(0);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
@@ -20,6 +21,8 @@ export default function EarningsPage() {
   const totalEarnings = sales
     .filter(s => s.payment_status === 'completed')
     .reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
+
+  const availableBalance = totalEarnings - withdrawnTotal;
 
   const fetchSales = async (pageNum: number, append: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -46,7 +49,22 @@ export default function EarningsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchSales(0, false).finally(() => setLoading(false));
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // Fetch withdrawn total
+      const { data: withdrawals } = await supabase
+        .from('withdrawals')
+        .select('amount')
+        .eq('creator_id', session.user.id)
+        .in('status', ['paid', 'approved']);
+
+      setWithdrawnTotal((withdrawals || []).reduce((s: number, w: any) => s + parseFloat(w.amount || '0'), 0));
+
+      await fetchSales(0, false);
+    };
+    init().finally(() => setLoading(false));
   }, []);
 
   const loadMore = async () => {
@@ -96,10 +114,33 @@ export default function EarningsPage() {
       </div>
 
       {/* Balance */}
-      <div className="glass-card rounded-xl p-8 mb-8 text-center">
-        <p className="text-sm text-muted mb-2">Balance disponible</p>
-        <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-accent-cyan">${totalEarnings.toFixed(2)}</p>
-        <p className="text-xs text-muted mt-3">Los pagos se acreditan entre 24-48hs después de solicitar el retiro.</p>
+      <div className="glass-card rounded-xl p-8 mb-8">
+        <div className="grid sm:grid-cols-3 gap-6 text-center">
+          <div>
+            <p className="text-sm text-muted mb-2 flex items-center justify-center gap-1.5"><TrendingDown className="w-4 h-4 text-green-400" /> Ganancias totales</p>
+            <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-accent-cyan">${totalEarnings.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted mb-2 flex items-center justify-center gap-1.5"><DollarSign className="w-4 h-4 text-blue-400" /> Ya retirado</p>
+            <p className="text-3xl font-black text-white">${withdrawnTotal.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted mb-2 flex items-center justify-center gap-1.5"><PiggyBank className="w-4 h-4 text-accent-violet" /> Disponible para retirar</p>
+            <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-accent-violet to-accent-cyan">${availableBalance.toFixed(2)}</p>
+          </div>
+        </div>
+        <p className="text-xs text-muted text-center mt-4">Los pagos se acreditan entre 24-48hs después de aprobar el retiro. Mínimo: $50 USD.</p>
+        {availableBalance > 0 && (
+          <div className="mt-4 bg-dark-light/40 rounded-lg p-3">
+            <div className="flex justify-between text-xs text-muted mb-1">
+              <span>Progreso para retirar (mín. $50)</span>
+              <span>{Math.min(100, (availableBalance / 50) * 100).toFixed(0)}%</span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-slate-700/50 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-accent-violet to-accent-cyan rounded-full transition-all" style={{ width: `${Math.min(100, (availableBalance / 50) * 100)}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sales List */}
@@ -141,13 +182,20 @@ export default function EarningsPage() {
                         {sale.payment_status === 'completed' ? 'Pagado' : 'Pendiente'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted mb-1">
+                    <div className="flex items-center gap-2 text-xs text-muted mb-1 flex-wrap">
                       <span className="text-accent-cyan font-bold">${sale.amount} USD</span>
                       <span>·</span>
                       <span>{sale.content?.title || 'Contenido'}</span>
                       <span>·</span>
                       <span className="capitalize">{sale.payment_method}</span>
                     </div>
+                    {sale.payment_status === 'completed' && (
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span className="text-green-400">+${parseFloat(sale.creator_earnings || '0').toFixed(2)} para vos</span>
+                        <span className="text-slate-600">·</span>
+                        <span className="text-slate-500">Comisión Drops: ${parseFloat(sale.commission || '0').toFixed(2)} (20%)</span>
+                      </div>
+                    )}
                     <p className="text-xs text-muted">{new Date(sale.created_at).toLocaleString('es-AR')}</p>
                   </div>
                 </div>

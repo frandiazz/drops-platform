@@ -16,6 +16,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Archivo muy grande (máx 50MB)' }, { status: 400 });
     }
 
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/ogg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      return NextResponse.json({ error: 'Tipo de archivo no permitido. Solo imágenes, videos y PDF.' }, { status: 400 });
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

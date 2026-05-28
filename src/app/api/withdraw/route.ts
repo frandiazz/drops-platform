@@ -35,6 +35,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Método de retiro inválido' }, { status: 400 });
     }
 
+    // Calculate available balance
+    const { data: sales } = await supabase
+      .from('sales')
+      .select('creator_earnings')
+      .eq('creator_id', user.id)
+      .eq('payment_status', 'completed');
+
+    const totalEarnings = (sales || []).reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
+
+    const { data: paidWithdrawals } = await supabase
+      .from('withdrawals')
+      .select('amount')
+      .eq('creator_id', user.id)
+      .in('status', ['paid', 'approved']);
+
+    const totalWithdrawn = (paidWithdrawals || []).reduce((sum: number, w: any) => sum + parseFloat(w.amount || '0'), 0);
+
+    const availableBalance = totalEarnings - totalWithdrawn;
+
+    if (parsedAmount > availableBalance) {
+      return NextResponse.json({
+        error: `Saldo insuficiente. Disponible: $${availableBalance.toFixed(2)} USD`
+      }, { status: 400 });
+    }
+
     const { error } = await supabase.from('withdrawals').insert({
       creator_id: user.id,
       amount: parsedAmount,
@@ -47,7 +72,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Error al crear solicitud' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, available: availableBalance });
   } catch (err) {
     console.error('Withdraw error:', err);
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
