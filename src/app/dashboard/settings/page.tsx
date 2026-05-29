@@ -24,7 +24,7 @@ export default function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const userId = user?.id;
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
   const profileUrl = userId ? `${siteUrl}/c/${userId}` : '';
 
   useEffect(() => {
