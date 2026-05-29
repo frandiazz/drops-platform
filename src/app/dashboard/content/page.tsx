@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Trash2, Plus, X, Pencil } from 'lucide-react';
+import { Upload, Image as ImageIcon, Trash2, Plus, X, Pencil, Link as LinkIcon, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { ContentPack } from '@/types';
 
@@ -22,6 +22,15 @@ export default function ContentPage() {
   const [contentType, setContentType] = useState<'one_time' | 'subscription'>('one_time');
   const [subscriptionPrice, setSubscriptionPrice] = useState('25');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
+  const getCheckoutUrl = (pack: ContentPack) => {
+    const stageName = user?.user_metadata?.stage_name || 'Creador';
+    const avatarUrl = user?.user_metadata?.avatar_url || '';
+    const price = pack.type === 'subscription' ? pack.subscription_price : pack.price;
+    return `${siteUrl}/checkout?creatorId=${user.id}&packId=${pack.id}&price=${price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}&type=${pack.type || 'one_time'}&subscriptionPrice=${pack.subscription_price || ''}`;
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -29,7 +38,7 @@ export default function ContentPage() {
         setUser(session.user);
         const { data } = await supabase
           .from('content')
-          .select('id, title, description, price, delivery_type, telegram_link, media_urls, is_active, created_at, content_type, subscription_price')
+          .select('id, title, description, price, delivery_type, telegram_link, media_urls, is_active, created_at, type, subscription_price')
           .eq('creator_id', session.user.id)
           .order('created_at', { ascending: false });
         if (data) setPacks(data as unknown as ContentPack[]);
@@ -77,7 +86,7 @@ export default function ContentPage() {
     if (!user) return;
     const { data } = await supabase
       .from('content')
-      .select('id, title, description, price, delivery_type, telegram_link, media_urls, is_active, created_at, content_type, subscription_price')
+      .select('id, title, description, price, delivery_type, telegram_link, media_urls, is_active, created_at, type, subscription_price')
       .eq('creator_id', user.id)
       .order('created_at', { ascending: false });
     if (data) setPacks(data as unknown as ContentPack[]);
@@ -387,7 +396,10 @@ export default function ContentPage() {
                     {pack.type === 'subscription' ? `$${pack.subscription_price}/mes` : `$${pack.price}`}
                   </p>
                   <p className="text-xs text-muted">{pack.is_active ? 'Activo' : 'Inactivo'}</p>
-                  <button onClick={() => openEditForm(pack)} className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">
+                  <button onClick={() => { const url = getCheckoutUrl(pack); navigator.clipboard.writeText(url); setCopiedId(pack.id); setTimeout(() => setCopiedId(null), 2000); }} className="mt-2 flex items-center gap-1 text-xs text-accent-cyan hover:text-white transition-colors">
+                    {copiedId === pack.id ? <><Check className="w-3 h-3" /> Copiado!</> : <><LinkIcon className="w-3 h-3" /> Copiar link</>}
+                  </button>
+                  <button onClick={() => openEditForm(pack)} className="mt-1 flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">
                     <Pencil className="w-3 h-3" /> Editar
                   </button>
                   <button onClick={() => handleDelete(pack.id)} disabled={deleting === pack.id}

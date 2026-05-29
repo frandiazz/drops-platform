@@ -164,7 +164,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
             <Clock className="w-16 h-16 text-red-400 mx-auto mb-6" />
             <h1 className="text-2xl font-bold mb-2">Suscripción expirada</h1>
             <p className="text-muted mb-4">Tu suscripción venció el {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
-            <p className="text-xs text-muted mb-6"><button onClick={() => { navigator.clipboard.writeText('DropsDrops2005@gmail.com'); }} className="text-accent-cyan hover:underline cursor-pointer">Contactanos</button> para renovar.</p>
+            <p className="text-xs text-muted mb-6"><a href="mailto:hola@drops.agency" className="text-accent-cyan hover:underline">Contactanos</a> para renovar.</p>
           </div>
         </main>
         <Footer />
@@ -287,7 +287,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 Próximo vencimiento: {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             )}
-            <p className="text-xs text-muted">¿Dudas? <button onClick={() => { navigator.clipboard.writeText('DropsDrops2005@gmail.com'); }} className="text-accent-cyan hover:underline cursor-pointer">Contactanos</button></p>
+            <p className="text-xs text-muted">¿Dudas? <a href="mailto:hola@drops.agency" className="text-accent-cyan hover:underline">Contactanos</a></p>
           </div>
         </div>
       </main>
