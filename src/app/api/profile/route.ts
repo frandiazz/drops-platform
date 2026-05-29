@@ -30,13 +30,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       id: creatorId,
-      stage_name: profile?.stage_name || metadata?.stage_name || '',
+      stage_name: profile?.stage_name || metadata?.stage_name || 'Creador',
       socials: profile?.socials || metadata?.socials || '',
       avatar_url: metadata?.avatar_url || '',
       bio: metadata?.bio || '',
-      instagram: metadata?.instagram || '',
-      tiktok: metadata?.tiktok || '',
-      twitter: metadata?.twitter || '',
+      instagram: profile?.instagram || metadata?.instagram || '',
+      tiktok: profile?.tiktok || metadata?.tiktok || '',
+      twitter: profile?.twitter || metadata?.twitter || '',
     });
   } catch (error: unknown) {
     console.error('Profile API error:', error);

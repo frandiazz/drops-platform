@@ -33,13 +33,27 @@ export default function CrearCuentaPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { stage_name: 'Creador' },
+        },
+      });
       if (error) throw error;
+
+      const userId = data.user?.id;
+      if (userId) {
+        await fetch('/api/create-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, email }),
+        });
+      }
 
       if (data.session) {
         router.push('/dashboard');
       } else {
-        // If no session (email confirmation enabled), sign in directly
         await supabase.auth.signInWithPassword({ email, password });
         router.push('/dashboard');
       }
