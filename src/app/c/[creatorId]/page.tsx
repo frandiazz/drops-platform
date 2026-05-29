@@ -18,7 +18,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
       try {
         const [profileRes, contentRes] = await Promise.all([
           fetch(`/api/profile?creatorId=${params.creatorId}`),
-          supabase.from('content').select('*').eq('creator_id', params.creatorId).eq('is_active', true),
+          supabase.from('content').select('id, type, price, subscription_price, title, media_urls').eq('creator_id', params.creatorId).eq('is_active', true),
         ]);
 
         const profileData = await profileRes.json();
@@ -66,7 +66,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
 
   const cleanSocial = (val: string) => val.replace(/^@/, '').trim();
 
-  const socialLinks: { icon: any; href: string; label: string }[] = [];
+  const socialLinks: { icon: React.ComponentType<{ className?: string }>; href: string; label: string }[] = [];
   if (profile.instagram) socialLinks.push({ icon: Instagram, href: `https://www.instagram.com/${cleanSocial(profile.instagram)}`, label: 'Instagram' });
   if (profile.tiktok) socialLinks.push({ icon: Music2, href: `https://www.tiktok.com/@${cleanSocial(profile.tiktok)}`, label: 'TikTok' });
   if (profile.twitter) socialLinks.push({ icon: Star, href: `https://x.com/${cleanSocial(profile.twitter)}`, label: 'X' });
@@ -78,6 +78,10 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
       <Header />
       <main className="min-h-screen pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-6 py-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Volver
+          </Link>
           {/* Creator Profile */}
           <div className="glass-card rounded-2xl p-8 mb-12 text-center">
             <div className="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-accent-violet to-accent-cyan flex items-center justify-center text-3xl font-bold mb-4 relative">

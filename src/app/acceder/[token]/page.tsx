@@ -15,13 +15,14 @@ export default function AccessPage({ params }: { params: { token: string } }) {
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [signedUrls, setSignedUrls] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       // Try subscription first
       const { data: subData, error: subError } = await supabase
         .from('subscriptions')
-        .select('*')
+        .select('id, status, current_period_end, buyer_email, content_id, created_at, amount')
         .eq('access_token', params.token)
         .maybeSingle();
 
@@ -32,7 +33,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
         if (subData.status === 'pending') {
           const { data: linkedSale } = await supabase
             .from('sales')
-            .select('*')
+            .select('id, payment_status, buyer_email, content_id, mp_payment_id')
             .eq('buyer_email', subData.buyer_email)
             .eq('content_id', subData.content_id)
             .eq('payment_status', 'pending')
@@ -57,7 +58,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
         if (subData.content_id) {
           const { data: contentData } = await supabase
             .from('content')
-            .select('*')
+            .select('id, title, description, media_urls, delivery_type, telegram_link')
             .eq('id', subData.content_id)
             .maybeSingle();
           if (contentData) setContent(contentData);
@@ -69,7 +70,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
       // Fallback to sale (backward compat)
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
-        .select('*')
+        .select('id, payment_status, amount, created_at, buyer_email, content_id, mp_payment_id')
         .eq('access_token', params.token)
         .maybeSingle();
 
@@ -95,7 +96,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
       if (saleData.content_id) {
         const { data: contentData } = await supabase
           .from('content')
-          .select('*')
+          .select('id, title, description, media_urls, delivery_type, telegram_link')
           .eq('id', saleData.content_id)
           .maybeSingle();
         if (contentData) setContent(contentData);
@@ -105,6 +106,18 @@ export default function AccessPage({ params }: { params: { token: string } }) {
     };
     fetchData();
   }, [params.token]);
+
+  // Fetch signed URLs when content is loaded
+  useEffect(() => {
+    if (content?.media_urls?.length) {
+      fetch(`/api/signed-content?token=${params.token}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.urls) setSignedUrls(data.urls);
+        })
+        .catch(() => {});
+    }
+  }, [content, params.token]);
 
   if (loading) {
     return (
@@ -220,19 +233,22 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                     <ImageIcon className="w-4 h-4" /> Archivos
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {content.media_urls.map((url: string, i: number) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                    {content.media_urls.map((url: string, i: number) => {
+                      const displayUrl = signedUrls[i] || url;
+                      return (
+                      <a key={i} href={displayUrl} target="_blank" rel="noopener noreferrer"
                         className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative block">
                         {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                          <video src={url} className="w-full h-full object-cover" controls preload="metadata" />
+                          <video src={displayUrl} className="w-full h-full object-cover" controls preload="metadata" />
                         ) : (
-                          <Image src={url} alt="Contenido" fill className="object-cover" sizes="(max-width: 640px) 50vw, 33vw" />
+                          <Image src={displayUrl} alt="Contenido" fill className="object-cover" sizes="(max-width: 640px) 50vw, 33vw" />
                         )}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Download className="w-6 h-6 text-white" />
                         </div>
                       </a>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -264,7 +280,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
 
           <div className="glass-card rounded-xl p-6 text-center">
             <p className="text-xs text-muted mb-2">
-              {subscription ? 'Suscripción iniciada el' : 'Compra realizada el'} {new Date(sale?.created_at).toLocaleDateString('es-AR')}
+              {subscription ? 'Suscripción iniciada el' : 'Compra realizada el'} {sale?.created_at ? new Date(sale.created_at).toLocaleDateString('es-AR') : '—'}
             </p>
             {subscription && (
               <p className="text-xs text-muted mb-1">

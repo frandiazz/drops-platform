@@ -36,16 +36,9 @@ export default function AdminWithdrawalsPage() {
     });
   }, [filter]);
 
-  const getToken = (): string | null => {
-    try {
-      const raw = localStorage.getItem('sb-njonqnmeyrutnxumxegl-auth-token');
-      if (!raw) return null;
-      return JSON.parse(raw)?.access_token || null;
-    } catch { return null; }
-  };
-
   const fetchWithdrawals = async () => {
-    const token = getToken();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     if (!token) return;
     setLoading(true);
     const res = await fetch(`/api/admin/withdrawals?status=${filter}`, { headers: { authorization: `Bearer ${token}` } });
@@ -55,7 +48,8 @@ export default function AdminWithdrawalsPage() {
   };
 
   const handleAction = async (withdrawalId: string, status: string) => {
-    const token = getToken();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     if (!token) return;
     setUpdating(withdrawalId);
     const res = await fetch('/api/admin/withdrawals', {
@@ -74,7 +68,7 @@ export default function AdminWithdrawalsPage() {
 
   const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, w) => s + w.amount, 0);
 
-  const statusConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+  const statusConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bg: string; label: string }> = {
     pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', label: 'Pendiente' },
     approved: { icon: CheckCircle, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30', label: 'Aprobado' },
     paid: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', label: 'Pagado' },
@@ -163,18 +157,18 @@ export default function AdminWithdrawalsPage() {
                       {w.status === 'pending' && (
                         <>
                           <button onClick={() => handleAction(w.id, 'approved')} disabled={updating === w.id}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
+                            className="px-4 py-3 min-h-[44px] bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
                             <Check className="w-4 h-4" /> Aprobar
                           </button>
                           <button onClick={() => handleAction(w.id, 'rejected')} disabled={updating === w.id}
-                            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-semibold rounded-lg border border-red-500/30 transition-all flex items-center gap-2 disabled:opacity-50">
+                            className="px-4 py-3 min-h-[44px] bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-semibold rounded-lg border border-red-500/30 transition-all flex items-center gap-2 disabled:opacity-50">
                             <X className="w-4 h-4" /> Rechazar
                           </button>
                         </>
                       )}
                       {w.status === 'approved' && (
                         <button onClick={() => handleAction(w.id, 'paid')} disabled={updating === w.id}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
+                          className="px-4 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
                           <DollarSign className="w-4 h-4" /> Marcar como pagado
                         </button>
                       )}

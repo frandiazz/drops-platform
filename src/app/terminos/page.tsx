@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Términos y Condiciones - Drops',
+  description: 'Términos y condiciones de uso de la plataforma Drops para creadores de contenido.',
+};
 
 export default function TermsPage() {
   return (

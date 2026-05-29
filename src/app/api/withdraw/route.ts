@@ -42,15 +42,15 @@ export async function POST(request: Request) {
       .eq('creator_id', user.id)
       .eq('payment_status', 'completed');
 
-    const totalEarnings = (sales || []).reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
+    const totalEarnings = (sales || []).reduce((sum: number, s: { creator_earnings: string }) => sum + parseFloat(s.creator_earnings || '0'), 0);
 
     const { data: paidWithdrawals } = await supabase
       .from('withdrawals')
       .select('amount')
       .eq('creator_id', user.id)
-      .in('status', ['paid', 'approved']);
+      .in('status', ['paid', 'approved', 'pending']);
 
-    const totalWithdrawn = (paidWithdrawals || []).reduce((sum: number, w: any) => sum + parseFloat(w.amount || '0'), 0);
+    const totalWithdrawn = (paidWithdrawals || []).reduce((sum: number, w: { amount: string }) => sum + parseFloat(w.amount || '0'), 0);
 
     const availableBalance = totalEarnings - totalWithdrawn;
 

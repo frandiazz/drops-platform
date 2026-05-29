@@ -3,10 +3,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Upload, Image as ImageIcon, Trash2, Plus, X, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import type { ContentPack } from '@/types';
 
 export default function ContentPage() {
   const [user, setUser] = useState<any>(null);
-  const [packs, setPacks] = useState<any[]>([]);
+  const [packs, setPacks] = useState<ContentPack[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState('');
@@ -16,7 +17,7 @@ export default function ContentPage() {
   const [telegramLink, setTelegramLink] = useState('');
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingPack, setEditingPack] = useState<any>(null);
+  const [editingPack, setEditingPack] = useState<ContentPack | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [contentType, setContentType] = useState<'one_time' | 'subscription'>('one_time');
   const [subscriptionPrice, setSubscriptionPrice] = useState('25');
@@ -28,10 +29,10 @@ export default function ContentPage() {
         setUser(session.user);
         const { data } = await supabase
           .from('content')
-          .select('*')
+          .select('id, title, description, price, delivery_type, telegram_link, media_urls, is_active, created_at, content_type, subscription_price')
           .eq('creator_id', session.user.id)
           .order('created_at', { ascending: false });
-        if (data) setPacks(data);
+        if (data) setPacks(data as unknown as ContentPack[]);
       }
     });
   }, []);
@@ -76,10 +77,10 @@ export default function ContentPage() {
     if (!user) return;
     const { data } = await supabase
       .from('content')
-      .select('*')
+      .select('id, title, description, price, delivery_type, telegram_link, media_urls, is_active, created_at, content_type, subscription_price')
       .eq('creator_id', user.id)
       .order('created_at', { ascending: false });
-    if (data) setPacks(data);
+    if (data) setPacks(data as unknown as ContentPack[]);
   };
 
   const resetForm = () => {
@@ -100,7 +101,7 @@ export default function ContentPage() {
     setShowForm(true);
   };
 
-  const openEditForm = (pack: any) => {
+  const openEditForm = (pack: ContentPack) => {
     setEditingPack(pack);
     setTitle(pack.title);
     setDescription(pack.description || '');
@@ -116,12 +117,25 @@ export default function ContentPage() {
 
   const handleSave = async () => {
     if (!user) return;
-    const payload: any = {
+
+    const parsedPrice = parseFloat(price);
+    const parsedSubPrice = parseFloat(subscriptionPrice);
+
+    if (contentType === 'one_time' && (isNaN(parsedPrice) || parsedPrice <= 0)) {
+      alert('El precio debe ser mayor a 0');
+      return;
+    }
+    if (contentType === 'subscription' && (isNaN(parsedSubPrice) || parsedSubPrice <= 0)) {
+      alert('El precio de suscripción debe ser mayor a 0');
+      return;
+    }
+
+    const payload: Partial<ContentPack> & { type?: string; subscription_price?: number | null } = {
       title,
       description,
-      price: contentType === 'one_time' ? parseFloat(price) : 0,
+      price: contentType === 'one_time' ? parsedPrice : 0,
       media_urls: uploadedUrls,
-      delivery_type: deliveryType,
+      delivery_type: deliveryType as ContentPack['delivery_type'],
       telegram_link: telegramLink || null,
       is_active: isActive,
       type: contentType,
@@ -356,7 +370,7 @@ export default function ContentPage() {
               <div key={pack.id} className="p-4 sm:p-6 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {pack.media_urls?.[0] ? (
-                    <img src={pack.media_urls[0]} alt="" loading="lazy" className="w-full h-full object-cover" />
+                    <img src={pack.media_urls[0]} alt={pack.title} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-muted" />
                   )}

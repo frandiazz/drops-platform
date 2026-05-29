@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
             .eq('id', saleId);
 
           const { data: updatedSale } = await supabase.from('sales')
-            .select('*')
+            .select('id, buyer_email, content_id, payment_status')
             .eq('id', saleId)
             .single();
 
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
             if (subscriptions && subscriptions.length > 0) {
               await supabase.from('subscriptions')
                 .update({ status: 'active' })
-                .in('id', subscriptions.map((s: any) => s.id));
+                .in('id', subscriptions.map((s: { id: string }) => s.id));
             }
           }
 
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: false });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Verify error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Error' }, { status: 500 });
   }
 }

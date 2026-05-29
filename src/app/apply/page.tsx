@@ -89,8 +89,8 @@ export default function ApplyPage() {
       if (!data.success) throw new Error(data.error || 'Error');
 
       setSubmitted(true);
-    } catch (err: any) {
-      setError(err.message || 'Error al enviar');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al enviar');
     } finally {
       setLoading(false);
       setUploading(false);

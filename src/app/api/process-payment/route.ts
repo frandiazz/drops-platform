@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 async function fetchRate(): Promise<number> {
   let rate = 1200;
@@ -12,8 +14,8 @@ async function fetchRate(): Promise<number> {
       const rateRes = await fetch('https://dolarapi.com/v1/dolares', { signal: AbortSignal.timeout(5000) });
       const rateData = await rateRes.json();
       if (Array.isArray(rateData)) {
-        const oficial = rateData.find((d: any) => d.casa === 'oficial' || d.nombre === 'Oficial');
-        const blue = rateData.find((d: any) => d.casa === 'blue' || d.nombre === 'Blue');
+        const oficial = rateData.find((d: { casa: string; nombre: string }) => d.casa === 'oficial' || d.nombre === 'Oficial');
+        const blue = rateData.find((d: { casa: string; nombre: string }) => d.casa === 'blue' || d.nombre === 'Blue');
         return Number(oficial?.venta || oficial?.compra || blue?.venta || blue?.compra || 1200);
       }
       if (rateData?.venta) return Number(rateData.venta);
@@ -24,6 +26,13 @@ async function fetchRate(): Promise<number> {
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 10 payment attempts per IP per minute
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = checkRateLimit(`payment:${ip}`, 10, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Demasiados intentos. Esperá un momento.' }, { status: 429 });
+    }
+
     const body = JSON.parse(await request.text());
     const { token, payment_method_id, amount, buyer_email, creator_id, content_id, title, identification, content_type } = body;
 
@@ -41,13 +50,46 @@ export async function POST(request: Request) {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const commission = amount * 0.2;
+    // Verify content exists and price matches
+    const { data: content, error: contentError } = await supabase
+      .from('content')
+      .select('id, price, subscription_price, type, creator_id')
+      .eq('id', content_id)
+      .maybeSingle();
+
+    if (contentError || !content) {
+      return NextResponse.json({ error: 'Contenido no encontrado' }, { status: 404 });
+    }
+
+    if (content.creator_id !== creator_id) {
+      return NextResponse.json({ error: 'Contenido no pertenece al creador' }, { status: 403 });
+    }
+
+    const expectedPrice = content.type === 'subscription'
+      ? parseFloat(content.subscription_price)
+      : parseFloat(content.price);
+    const clientAmount = Number(amount);
+
+    if (isNaN(clientAmount) || clientAmount <= 0 || Math.abs(clientAmount - expectedPrice) > 0.01) {
+      return NextResponse.json({ error: 'Monto inválido' }, { status: 400 });
+    }
+
+    // Get creator's commission rate
+    const { data: creatorProfile } = await supabase
+      .from('profiles')
+      .select('commission_rate')
+      .eq('id', creator_id)
+      .maybeSingle();
+    const commissionRate = parseFloat(creatorProfile?.commission_rate || 20) / 100;
+
+    const commission = amount * commissionRate;
     const creatorEarnings = amount - commission;
 
+    const saleAccessToken = crypto.randomUUID();
     const { data: sale, error: saleError } = await supabase.from('sales').insert({
       content_id, creator_id, buyer_email, amount, commission,
       creator_earnings: creatorEarnings,
-      payment_method: 'mercadopago', payment_status: 'pending',
+      payment_method: 'mercadopago', payment_status: 'pending', access_token: saleAccessToken,
     }).select().single();
 
     if (saleError || !sale) {
@@ -57,9 +99,10 @@ export async function POST(request: Request) {
     const amountARS = Math.round(Number(amount) * await fetchRate());
 
     if (content_type === 'subscription') {
-      // Create subscription record
+      // Create subscription record with explicit access_token
+      const subAccessToken = crypto.randomUUID();
       const { data: sub, error: subError } = await supabase.from('subscriptions').insert({
-        creator_id, content_id, buyer_email, amount, status: 'pending',
+        creator_id, content_id, buyer_email, amount, status: 'pending', access_token: subAccessToken,
       }).select().single();
 
       if (subError) {
@@ -67,9 +110,9 @@ export async function POST(request: Request) {
       }
 
       // Create MP preapproval (recurring)
-      const payer: any = { email: buyer_email };
+      const payerBody: Record<string, unknown> = { email: buyer_email };
       if (identification?.number) {
-        payer.identification = { type: identification.type || 'DNI', number: identification.number };
+        payerBody.identification = { type: identification.type || 'DNI', number: identification.number };
       }
 
       const preapprovalRes = await fetch('https://api.mercadopago.com/preapproval', {
@@ -81,7 +124,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           reason: title || 'Suscripción en Drops',
           external_reference: sub.id,
-          payer_email: buyer_email,
+          payer: payerBody,
           card_token_id: token,
           auto_recurring: {
             frequency: 1,
@@ -89,7 +132,7 @@ export async function POST(request: Request) {
             transaction_amount: amountARS,
             currency_id: 'ARS',
           },
-          back_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://drops-ly.vercel.app'}/acceder/${sub.access_token}`,
+          back_url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/acceder/${sub.access_token}`,
           status: 'authorized',
         }),
       });
@@ -107,6 +150,12 @@ export async function POST(request: Request) {
           await supabase.from('sales')
             .update({ payment_status: 'completed', mp_payment_id: `preapproval_${preapprovalData.id}` })
             .eq('id', sale.id);
+
+          // Set 30-day period for subscription
+          const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          await supabase.from('subscriptions')
+            .update({ current_period_start: new Date().toISOString(), current_period_end: periodEnd })
+            .eq('id', sub.id);
 
           return NextResponse.json({ success: true, access_token: sub.access_token });
         }
@@ -164,8 +213,9 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         if (pendingSub) {
+          const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
           await supabase.from('subscriptions')
-            .update({ status: 'active' })
+            .update({ status: 'active', current_period_start: new Date().toISOString(), current_period_end: periodEnd })
             .eq('id', pendingSub.id);
           return NextResponse.json({ success: true, access_token: pendingSub.access_token, payment_id: mpData.id });
         }
@@ -176,8 +226,8 @@ export async function POST(request: Request) {
 
     const mpError = mpData.message || mpData.cause?.[0]?.description || mpData.status_detail || 'rechazado';
     return NextResponse.json({ success: false, error: `Pago ${mpData.status}: ${mpError}` }, { status: 402 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error:', error);
-    return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Error interno' }, { status: 500 });
   }
 }

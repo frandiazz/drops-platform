@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
     let query = admin.supabase
       .from('withdrawals')
-      .select('*')
+      .select('id, creator_id, amount, status, created_at, approved_at, paid_at, rejected_at')
       .order('created_at', { ascending: false });
 
     if (status && status !== 'all') query = query.eq('status', status);
@@ -76,6 +76,28 @@ export async function PATCH(request: Request) {
 
     if (!withdrawalId || !['approved', 'paid', 'rejected'].includes(status)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+
+    // Validate state transition
+    const { data: current } = await admin.supabase
+      .from('withdrawals')
+      .select('status')
+      .eq('id', withdrawalId)
+      .single();
+
+    if (!current) return NextResponse.json({ error: 'Retiro no encontrado' }, { status: 404 });
+
+    const validTransitions: Record<string, string[]> = {
+      pending: ['approved', 'rejected'],
+      approved: ['paid', 'rejected'],
+      paid: [],
+      rejected: [],
+    };
+
+    if (!validTransitions[current.status]?.includes(status)) {
+      return NextResponse.json({
+        error: `Transición inválida: ${current.status} → ${status}`
+      }, { status: 400 });
     }
 
     const updateData: any = { status };

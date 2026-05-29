@@ -10,6 +10,7 @@ export default function CrearCuentaPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,6 +26,10 @@ export default function CrearCuentaPage() {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -38,8 +43,8 @@ export default function CrearCuentaPage() {
         await supabase.auth.signInWithPassword({ email, password });
         router.push('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'Error al crear la cuenta');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al crear la cuenta');
     } finally {
       setLoading(false);
     }
@@ -88,6 +93,16 @@ export default function CrearCuentaPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
                 placeholder="Mínimo 6 caracteres" />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="confirm-password-crear" className="block text-sm font-medium text-muted mb-2">Confirmar Contraseña</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
+              <input id="confirm-password-crear" type="password" required minLength={6} value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
+                placeholder="Repetí tu contraseña" />
             </div>
           </div>
 

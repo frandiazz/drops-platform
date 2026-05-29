@@ -8,8 +8,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { CreditCard, Zap, Shield, Check, Loader2, AlertCircle, Lock, User, Repeat } from 'lucide-react';
 
+interface MercadoPagoInstance {
+  checkout: (opts: { preference: { id: string }; render: { container: string; label: string } }) => void;
+}
+
 declare global {
-  interface Window { MercadoPago: any; }
+  interface Window { MercadoPago: new (key: string, opts?: { locale: string }) => MercadoPagoInstance; }
 }
 
 const CARD_BRANDS: Record<string, string> = {
@@ -67,14 +71,14 @@ function CheckoutContent() {
   useEffect(() => {
     fetch('/api/rate').then(r => r.json()).then(d => setArsRate(d.rate)).catch(() => {});
     if (typeof window.MercadoPago !== 'undefined') {
-      setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
+      setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || ''));
       setMpReady(true);
     }
   }, []);
 
   const onMpReady = () => {
     if (typeof window.MercadoPago !== 'undefined') {
-      setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY));
+      setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || ''));
       setMpReady(true);
     }
   };
@@ -131,8 +135,8 @@ function CheckoutContent() {
       } else {
         setError(data.error || 'Pago rechazado');
       }
-    } catch (err: any) {
-      setError(err?.cause?.[0]?.description || err?.message || 'Error al procesar el pago');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : err instanceof Object && 'cause' in err ? String(err.cause) : 'Error al procesar el pago');
     } finally {
       setProcessing(false);
     }
@@ -191,20 +195,33 @@ function CheckoutContent() {
                 {/* Trust badges */}
                 <div className="space-y-3">
                   {packType === 'subscription' ? (
-                    <div className="flex items-center gap-2 text-sm text-muted"><Repeat className="w-4 h-4 text-cyan-400" /><span>Se renueva automáticamente cada mes</span></div>
+                    <>
+                      <div className="flex items-center gap-2 text-sm text-muted"><Repeat className="w-4 h-4 text-cyan-400" /><span>Se renueva automáticamente cada mes</span></div>
+                      <div className="flex items-center gap-2 text-sm text-green-400"><Check className="w-4 h-4" /><span>Cancelá cuando quieras, sin penalización</span></div>
+                    </>
                   ) : (
                     <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Acceso inmediato al pagar</span></div>
                   )}
                   <div className="flex items-center gap-2 text-sm text-muted"><Check className="w-4 h-4 text-green-400" /><span>Sin registro · Solo tarjeta</span></div>
                   <div className="flex items-center gap-2 text-sm text-muted"><Lock className="w-4 h-4 text-green-400" /><span>Pago 100% seguro</span></div>
+                  <div className="flex items-center gap-2 text-sm text-amber-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg><span>Contenido protegido por DMCA</span></div>
                 </div>
 
-                {/* MP badge */}
-                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-bold">MP</div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-blue-400">Procesado por Mercado Pago</p>
-                    <p className="text-[10px] text-slate-500">Pago seguro · Datos encriptados</p>
+                {/* MP badge + Garantía */}
+                <div className="space-y-2">
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
+                    <svg className="w-8 h-8 text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <div>
+                      <p className="text-[11px] font-semibold text-blue-400">Procesado por Mercado Pago</p>
+                      <p className="text-[10px] text-slate-500">Pago seguro · Datos tokenizados · Sin almacenamiento</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+                    <svg className="w-8 h-8 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <div>
+                      <p className="text-[11px] font-semibold text-green-400">Garantía Drops</p>
+                      <p className="text-[10px] text-slate-500">Problema con tu compra? Te asistimos al instante · hola@drops.agency</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -217,8 +234,8 @@ function CheckoutContent() {
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm mb-6">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+                <div role="alert" className="flex items-center gap-2 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm mb-6">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />{error}
                 </div>
               )}
 

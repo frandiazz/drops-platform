@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Política de Privacidad - Drops',
+  description: 'Política de privacidad de Drops. Conocé cómo manejamos tu información personal y datos de pago.',
+};
 
 export default function PrivacyPage() {
   return (

@@ -15,16 +15,19 @@ export default function SettingsPage() {
   const [instagram, setInstagram] = useState('');
   const [tiktok, setTiktok] = useState('');
   const [twitter, setTwitter] = useState('');
+  const [commissionRate, setCommissionRate] = useState(20);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const userId = user?.id;
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://drops-ly.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const profileUrl = userId ? `${siteUrl}/c/${userId}` : '';
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setUser(session.user);
         const m = session.user.user_metadata || {};
@@ -35,6 +38,14 @@ export default function SettingsPage() {
         setInstagram(m.instagram || '');
         setTiktok(m.tiktok || '');
         setTwitter(m.twitter || '');
+
+        // Load commission rate from profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('commission_rate')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (profile?.commission_rate) setCommissionRate(profile.commission_rate);
       }
     });
   }, []);
@@ -46,7 +57,7 @@ export default function SettingsPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('bucket', 'content');
+      formData.append('bucket', 'avatars');
       const res = await fetch('/api/upload-file', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.url) setAvatarUrl(data.url);
@@ -58,30 +69,61 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    const metadata = {
-      stage_name: stageName,
-      bio,
-      socials,
-      avatar_url: avatarUrl,
-      instagram,
-      tiktok,
-      twitter,
-    };
-
-    await supabase.auth.updateUser({ data: metadata });
-
-    if (user) {
-      await supabase.from('profiles').upsert({
-        id: user.id,
+    setSaveError('');
+    try {
+      const metadata = {
         stage_name: stageName,
+        bio,
         socials,
-        email: user.email,
-        updated_at: new Date().toISOString(),
-      });
-    }
+        avatar_url: avatarUrl,
+        instagram,
+        tiktok,
+        twitter,
+      };
 
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+      const { error: updateError } = await supabase.auth.updateUser({ data: metadata });
+      if (updateError) throw updateError;
+
+      if (user) {
+        const { error: upsertError } = await supabase.from('profiles').upsert({
+          id: user.id,
+          stage_name: stageName,
+          socials,
+          email: user.email,
+          updated_at: new Date().toISOString(),
+        });
+        if (upsertError) throw upsertError;
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Error al guardar');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirm('¿Estás segura? Esta acción eliminará tu cuenta, todo tu contenido y no podrá deshacerse.')) return;
+    setDeleting(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        await supabase.auth.signOut();
+        router.push('/');
+      } else {
+        alert(data.error || 'Error al eliminar cuenta');
+      }
+    } catch {
+      alert('Error del servidor');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -104,7 +146,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-6">
             <div className="relative w-20 h-20 rounded-full overflow-hidden bg-dark-light/80 border border-slate-700/50 flex-shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt="Foto de perfil" loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-muted">
                   {stageName?.charAt(0)?.toUpperCase() || '?'}
@@ -243,6 +285,7 @@ export default function SettingsPage() {
               <Save className="w-5 h-5" />
               {saved ? 'Guardado!' : 'Guardar cambios'}
             </button>
+            {saveError && <p className="text-xs text-red-400 mt-2">{saveError}</p>}
           </div>
         </div>
 
@@ -255,7 +298,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4 p-4 rounded-lg bg-dark-light/50">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-dark-light/80 flex-shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt="Foto de perfil" loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted">{stageName?.charAt(0)?.toUpperCase() || '?'}</div>
               )}
@@ -278,20 +321,23 @@ export default function SettingsPage() {
           </h3>
           <div className="space-y-3">
             {[
-              { label: 'Full Management', desc: 'Manejamos todo: IG, X, Threads, TikTok, Telegram', commission: '50%', active: false },
-              { label: 'Social Media Only', desc: 'Manejamos redes, vos manejás Telegram', commission: '30%', active: false },
-              { label: 'Solo Plataforma', desc: 'Usás Drops, hacés todo sola', commission: '20%', active: true },
-            ].map((plan, i) => (
-              <div key={i} className={`p-4 rounded-lg border transition-colors ${plan.active ? 'border-accent-violet bg-accent-violet/5' : 'border-slate-700/50 bg-dark-light/30'}`}>
+              { label: 'Full Management', desc: 'Manejamos todo: IG, X, Threads, TikTok, Telegram', commission: 50 },
+              { label: 'Social Media Only', desc: 'Manejamos redes, vos manejás Telegram', commission: 30 },
+              { label: 'Solo Plataforma', desc: 'Usás Drops, hacés todo sola', commission: 20 },
+            ].map((plan, i) => {
+              const isActive = commissionRate === plan.commission;
+              return (
+              <div key={i} className={`p-4 rounded-lg border transition-colors ${isActive ? 'border-accent-violet bg-accent-violet/5' : 'border-slate-700/50 bg-dark-light/30'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold">{plan.label}</p>
                     <p className="text-xs text-muted">{plan.desc}</p>
                   </div>
-                  <span className={`text-sm font-bold ${plan.active ? 'text-accent-violet' : 'text-muted'}`}>{plan.commission}</span>
+                  <span className={`text-sm font-bold ${isActive ? 'text-accent-violet' : 'text-muted'}`}>{plan.commission}%</span>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           <p className="text-xs text-muted mt-4">
             Para cambiar tu nivel de servicio, contactanos a DropsDrops2005@gmail.com
@@ -303,14 +349,11 @@ export default function SettingsPage() {
           <h3 className="text-lg font-bold mb-4 text-red-400">Zona de peligro</h3>
           <p className="text-sm text-muted mb-4">Al eliminar tu cuenta, perderás acceso a todo tu contenido y ganancias pendientes.</p>
           <button
-            onClick={async () => {
-              if (!confirm('¿Estás segura? Esta acción eliminará tu cuenta, todo tu contenido y no podrá deshacerse.')) return;
-              await supabase.auth.signOut();
-              router.push('/');
-            }}
-            className="px-6 py-3 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium"
+            onClick={handleDeleteAccount}
+            disabled={deleting}
+            className="px-6 py-3 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium disabled:opacity-50"
           >
-            Eliminar cuenta
+            {deleting ? 'Eliminando...' : 'Eliminar cuenta'}
           </button>
         </div>
       </div>

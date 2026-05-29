@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    let query = admin.supabase.from('applications').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    let query = admin.supabase.from('applications').select('id, name, email, instagram, tiktok, twitter, other_social, status, created_at, reviewed_at, invite_token, photo_urls, age', { count: 'exact' }).order('created_at', { ascending: false });
     if (status && status !== 'all') query = query.eq('status', status);
 
     const { data, error, count } = await query.range(from, to);

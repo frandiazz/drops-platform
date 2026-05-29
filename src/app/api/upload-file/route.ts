@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 20 uploads per IP per minute
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = checkRateLimit(`upload:${ip}`, 20, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Demasiadas subidas. Esperá un momento.' }, { status: 429 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const allowedBuckets = ['content', 'applications', 'avatars'];
     const bucket = (formData.get('bucket') as string) || 'content';
+    if (!allowedBuckets.includes(bucket)) {
+      return NextResponse.json({ error: 'Bucket no permitido' }, { status: 400 });
+    }
 
     if (!file) {
       return NextResponse.json({ error: 'No se envió ningún archivo' }, { status: 400 });
@@ -17,8 +29,24 @@ export async function POST(request: Request) {
     }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/ogg', 'application/pdf'];
-    if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({ error: 'Tipo de archivo no permitido. Solo imágenes, videos y PDF.' }, { status: 400 });
+    }
+
+    // Validate extension matches MIME
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const extMap: Record<string, string[]> = {
+      jpeg: ['image/jpeg'], jpg: ['image/jpeg'],
+      png: ['image/png'],
+      webp: ['image/webp'],
+      gif: ['image/gif'],
+      mp4: ['video/mp4'],
+      webm: ['video/webm'],
+      ogg: ['video/ogg'],
+      pdf: ['application/pdf'],
+    };
+    if (!extMap[ext]?.includes(file.type)) {
+      return NextResponse.json({ error: 'Extensión no coincide con el tipo de archivo' }, { status: 400 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,7 +59,6 @@ export async function POST(request: Request) {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const fileName = `${bucket}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -53,8 +80,8 @@ export async function POST(request: Request) {
       .getPublicUrl(fileName);
 
     return NextResponse.json({ url: publicUrl });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 });
   }
 }

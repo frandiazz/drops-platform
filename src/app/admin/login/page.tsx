@@ -37,8 +37,8 @@ export default function AdminLoginPage() {
       }
 
       router.push('/admin');
-    } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -94,6 +94,11 @@ export default function AdminLoginPage() {
             className="w-full h-12 bg-accent-violet text-white font-bold rounded-lg neon-glow hover:bg-violet-600 transition-all duration-300 disabled:opacity-50">
             {loading ? 'Verificando...' : 'Ingresar'}
           </button>
+          <div className="text-center">
+            <button type="button" onClick={() => { if (email) { supabase.auth.resetPasswordForEmail(email); alert('Si el email existe, recibirás un link de recuperación.'); } else { alert('Ingresá tu email primero.'); } }} className="text-xs text-muted hover:text-accent-cyan transition-colors py-2">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
         </form>
 
         <p className="text-center text-xs text-muted mt-6">

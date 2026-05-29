@@ -60,21 +60,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    const token = getAccessToken();
-    if (!token) return;
-    fetchApplications(token);
+    fetchApplications();
   }, [user, filter]);
 
-  const getAccessToken = (): string | null => {
-    try {
-      const raw = localStorage.getItem('sb-njonqnmeyrutnxumxegl-auth-token');
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed?.access_token || null;
-    } catch { return null; }
-  };
-
-  const fetchApplications = async (token: string) => {
+  const fetchApplications = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return;
     const res = await fetch(`/api/admin/applications?status=${filter}`, {
       headers: { authorization: `Bearer ${token}` },
     });
@@ -83,7 +75,8 @@ export default function AdminPage() {
   };
 
   const handleAction = async (applicationId: string, status: 'approved' | 'rejected') => {
-    const token = getAccessToken();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     if (!token) return;
 
     const res = await fetch('/api/admin/applications', {
@@ -191,7 +184,7 @@ export default function AdminPage() {
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0 relative">
                         {app.photo_urls?.[0] ? (
-                          <Image src={app.photo_urls[0]} alt="" fill className="object-cover" sizes="56px" />
+                          <Image src={app.photo_urls[0]} alt={`Foto de ${app.name}`} fill className="object-cover" sizes="56px" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted">
                             {app.name?.charAt(0)}

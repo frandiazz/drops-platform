@@ -11,8 +11,8 @@ export async function GET() {
       throw new Error('Invalid response');
     }
 
-    const oficial = data.find((d: any) => d.casa === 'oficial');
-    const blue = data.find((d: any) => d.casa === 'blue');
+    const oficial = data.find((d: { casa: string }) => d.casa === 'oficial');
+    const blue = data.find((d: { casa: string }) => d.casa === 'blue');
 
     const rate = oficial?.venta || blue?.venta || 1200;
 

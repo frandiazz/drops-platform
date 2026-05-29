@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, CreditCard, Wallet, ArrowUpRight, Mail, CheckCircle, AlertCircle, TrendingDown, PiggyBank } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import type { Sale, Withdrawal } from '@/types';
 
 const PAGE_SIZE = 20;
 
 export default function EarningsPage() {
-  const [sales, setSales] = useState<any[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
@@ -20,7 +21,7 @@ export default function EarningsPage() {
 
   const totalEarnings = sales
     .filter(s => s.payment_status === 'completed')
-    .reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
+    .reduce((sum: number, s: Sale) => sum + parseFloat(s.creator_earnings || '0'), 0);
 
   const availableBalance = totalEarnings - withdrawnTotal;
 
@@ -40,9 +41,9 @@ export default function EarningsPage() {
 
     if (error) return;
     if (append) {
-      setSales(prev => [...prev, ...(data || [])]);
+      setSales(prev => [...prev, ...(data as Sale[] || [])]);
     } else {
-      setSales(data || []);
+      setSales(data as Sale[] || []);
     }
     setHasMore((data || []).length === PAGE_SIZE);
   };
@@ -60,7 +61,7 @@ export default function EarningsPage() {
         .eq('creator_id', session.user.id)
         .in('status', ['paid', 'approved']);
 
-      setWithdrawnTotal((withdrawals || []).reduce((s: number, w: any) => s + parseFloat(w.amount || '0'), 0));
+      setWithdrawnTotal((withdrawals || []).reduce((s: number, w: { amount: number }) => s + parseFloat(String(w.amount || 0)), 0));
 
       await fetchSales(0, false);
     };
@@ -97,8 +98,8 @@ export default function EarningsPage() {
       setWithdrawMsg({ type: 'success', text: 'Solicitud de retiro enviada con éxito. Te contactaremos pronto.' });
       setWithdrawAmount('');
       setWithdrawMethod('');
-    } catch (err: any) {
-      setWithdrawMsg({ type: 'error', text: err.message || 'Error al solicitar retiro' });
+    } catch (error: unknown) {
+      setWithdrawMsg({ type: 'error', text: error instanceof Error ? error.message : 'Error al solicitar retiro' });
     } finally {
       setWithdrawing(false);
     }
@@ -193,7 +194,7 @@ export default function EarningsPage() {
                       <div className="flex items-center gap-2 text-[11px]">
                         <span className="text-green-400">+${parseFloat(sale.creator_earnings || '0').toFixed(2)} para vos</span>
                         <span className="text-slate-600">·</span>
-                        <span className="text-slate-500">Comisión Drops: ${parseFloat(sale.commission || '0').toFixed(2)} (20%)</span>
+                        <span className="text-slate-500">Comisión Drops: ${parseFloat(sale.commission ?? '0').toFixed(2)} ({sale.amount > 0 ? Math.round(parseFloat(sale.commission ?? '0') / sale.amount * 100) : 0}%)</span>
                       </div>
                     )}
                     <p className="text-xs text-muted">{new Date(sale.created_at).toLocaleString('es-AR')}</p>

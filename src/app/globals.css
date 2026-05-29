@@ -156,6 +156,14 @@
     transform: translateY(0);
   }
 
+  .scale-up {
+    transform: scale(1.03);
+  }
+
+  .scale-up:hover {
+    transform: scale(1.06);
+  }
+
   .bg-grid {
     background-image:
       linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),

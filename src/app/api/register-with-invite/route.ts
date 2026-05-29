@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 10 registration attempts per IP per hour
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = checkRateLimit(`register:${ip}`, 10, 3600000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Demasiados intentos. Intentá más tarde.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const { token, password } = body;
 
@@ -18,7 +26,7 @@ export async function POST(request: Request) {
 
     const { data: application, error: appError } = await supabase
       .from('applications')
-      .select('*')
+      .select('id, email, name, instagram, tiktok, twitter, other_social')
       .eq('invite_token', token)
       .eq('status', 'approved')
       .maybeSingle();

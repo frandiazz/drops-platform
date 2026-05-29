@@ -5,7 +5,6 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 function RegisterForm() {
   const router = useRouter();
@@ -13,11 +12,12 @@ function RegisterForm() {
   const token = searchParams.get('token');
 
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [validating, setValidating] = useState(true);
-  const [application, setApplication] = useState<any>(null);
+  const [application, setApplication] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -27,26 +27,31 @@ function RegisterForm() {
     }
 
     setValidating(true);
-    supabase
-      .from('applications')
-      .select('name, email, status')
-      .eq('invite_token', token)
-      .eq('status', 'approved')
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error || !data) {
+    fetch(`/api/validate-token?token=${encodeURIComponent(token)}`)
+      .then(async (res) => {
+        if (!res.ok) {
           setError('Token inválido o expirado');
-        } else {
-          setApplication(data);
+          return;
         }
-        setValidating(false);
-      });
+        const data = await res.json();
+        setApplication({ name: data.name, email: data.email });
+      })
+      .catch(() => {
+        setError('Error al validar el token');
+      })
+      .finally(() => setValidating(false));
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/register-with-invite', {
@@ -60,8 +65,8 @@ function RegisterForm() {
 
       setSuccess(true);
       setTimeout(() => router.push('/login'), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Error al crear la cuenta');
+    } catch {
+      setError('Error al crear la cuenta');
     } finally {
       setLoading(false);
     }
@@ -130,7 +135,17 @@ function RegisterForm() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
               <input type="email" value={application.email} disabled
                 className="w-full h-12 rounded-lg bg-dark-light/50 border border-slate-700/50 pl-10 pr-4 text-muted cursor-not-allowed" />
+          </div>
+          <div>
+            <label htmlFor="reg-confirm-password" className="block text-sm font-medium text-muted mb-2">Confirmar contraseña</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
+              <input id="reg-confirm-password" type="password" required minLength={6} value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
+                placeholder="Repetí tu contraseña" />
             </div>
+          </div>
           </div>
         )}
 

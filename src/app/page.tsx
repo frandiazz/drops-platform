@@ -1,18 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+
+const creators = [
+  'Sofía', 'Martín', 'Camila', 'Julián', 'Valentina', 'Tomás', 'Lucía', 'Felipe', 'Agustina', 'Mateo',
+  'Isabella', 'Santiago', 'Emilia', 'Benjamín', 'Catalina', 'Sebastián', 'Micaela', 'Nicolás', 'Renata', 'Bruno',
+];
+
+function LiveTicker() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((i) => (i + 1) % creators.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="py-3 bg-accent-violet/5 border-y border-accent-violet/10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-3 text-sm text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          <span className="text-green-400 font-semibold">En vivo</span>
+        </span>
+        <span className="hidden sm:inline">&mdash;</span>
+        <span className="font-semibold text-white truncate max-w-[140px] sm:max-w-none">{creators[index]}</span>
+        <span>se unió a Drops</span>
+        <span className="text-[11px] text-slate-500">hace minutos</span>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [fans, setFans] = useState(1000);
   const [price, setPrice] = useState(25);
+  const [plan, setPlan] = useState<'solo' | 'social' | 'full'>('solo');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const gross = fans * price;
-  const net = Math.round(gross * 0.80);
+  const rates = { solo: 0.8, social: 0.7, full: 0.5 };
+  const net = Math.round(gross * rates[plan]);
 
   const formatNumber = (n: number) => n.toLocaleString('es-AR');
+
+  function StatCard({ target, prefix = '', suffix = '', label, color }: { target: number; prefix?: string; suffix?: string; label: string; color: string }) {
+    const { ref, display, visible } = useAnimatedCounter(target, 2500, prefix, suffix);
+    return (
+      <div ref={ref} className="section-fade">
+        <p className={`text-3xl sm:text-4xl font-black ${color}${visible ? '' : ' opacity-0'}`}>{visible ? display : `${prefix}0${suffix}`}</p>
+        <p className="text-sm text-muted mt-1">{label}</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,7 +86,7 @@ export default function Home() {
   const faqs = [
     { q: '¿Cómo recibo el contenido después de pagar?', a: 'Al instante. Cuando completás el pago, te redirigimos automáticamente a una página con todo el contenido listo para ver o descargar. No hace falta que pongas tu email ni esperes ningún mensaje. El link de acceso es único y seguro.' },
     { q: '¿Es seguro poner los datos de mi tarjeta?', a: 'Sí. Todo el procesamiento de pagos lo hace Mercado Pago, la plataforma líder en Latinoamérica con más de 20 años de trayectoria. Los datos de tu tarjeta se tokenizan directamente desde tu navegador, nunca pasan por nuestros servidores.' },
-    { q: '¿Puedo pedir un reembolso si no me gusta el contenido?', a: 'Si no recibís el acceso o hay un error técnico, contactanos a DropsDrops2005@gmail.com y lo resolvemos. Cada creador establece su propia política de reembolso, consultá directamente con él/ella.' },
+    { q: '¿Puedo pedir un reembolso si no me gusta el contenido?', a: 'Si no recibís el acceso o hay un error técnico, contactanos a hola@drops.agency y lo resolvemos. Cada creador establece su propia política de reembolso, consultá directamente con él/ella.' },
     { q: '¿Cuánto cobra Drops de comisión?', a: 'Depende del servicio que elijas: Full Management (50%), Social Media Only (30%), Solo Plataforma (20%, puede bajar a 10% por volumen). Esto incluye gestión de redes, sistema de cobro express, protección antifraude y soporte continuo.' },
     { q: '¿Cómo y cuándo me pagan?', a: 'Los pagos se procesan y acreditan entre 24 y 48 horas después de solicitar el retiro. Podés retirar tus ganancias mediante transferencia bancaria, criptomonedas (USDT TRC20) o Mercado Pago. El mínimo de retiro es de $50 USD.' },
     { q: '¿Necesito un mínimo de seguidores para unirme?', a: 'No exigimos un mínimo de seguidores. Evaluamos cada caso individualmente. Si tenés contenido de calidad y compromiso para crecer, Drops te ayuda a escalar desde donde estés.' },
@@ -75,6 +122,21 @@ export default function Home() {
                   <a href="#como-funciona" className="px-8 py-4 btn-cyan-outline font-bold rounded-xl text-center">
                     Ver cómo funciona
                   </a>
+                </div>
+
+                <div className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-5 text-xs text-muted">
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    Pagos 100% seguros por <span className="text-blue-400 font-semibold">Mercado Pago</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-accent-cyan" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <span className="text-green-400 font-semibold">+500</span> creadores activos
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    Protección DMCA activa
+                  </span>
                 </div>
               </div>
 
@@ -122,20 +184,16 @@ export default function Home() {
         <section className="py-16 border-y border-slate-800/50 bg-dark-light/20" aria-label="Estadísticas de Drops">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { value: '+500', label: 'Creadores Activos', color: 'text-accent-cyan' },
-                { value: '$2M+', label: 'Generados en Ventas', color: 'gradient-text' },
-                { value: '10s', label: 'Checkout Promedio', color: 'text-accent-violet' },
-                { value: '98%', label: 'Satisfacción', color: 'text-green-400' },
-              ].map((stat, i) => (
-                <div key={i} className="section-fade">
-                  <p className={`text-3xl sm:text-4xl font-black ${stat.color}`}>{stat.value}</p>
-                  <p className="text-sm text-muted mt-1">{stat.label}</p>
-                </div>
-              ))}
+              <StatCard target={500} prefix="+" label="Creadores Activos" color="text-accent-cyan" />
+              <StatCard target={2000000} prefix="$" suffix="+" label="Generados en Ventas" color="gradient-text" />
+              <StatCard target={10} suffix="s" label="Checkout Promedio" color="text-accent-violet" />
+              <StatCard target={98} suffix="%" label="Satisfacción" color="text-green-400" />
             </div>
           </div>
         </section>
+
+        {/* LIVE SOCIAL PROOF */}
+        <LiveTicker />
 
         {/* SERVICIOS */}
         <section id="servicios" className="py-24 relative" aria-labelledby="services-heading">
@@ -198,18 +256,165 @@ export default function Home() {
                     <input type="range" id="priceRange" min="5" max="100" step="1" value={price} onChange={(e) => setPrice(Number(e.target.value))} aria-label="Seleccionar precio del pack en dólares" />
                     <div className="flex justify-between text-xs text-muted mt-2"><span>$5</span><span>$100</span></div>
                   </div>
+                  <div>
+                    <label className="text-sm font-semibold text-muted block mb-3">Plan</label>
+                    <div className="flex gap-2">
+                      {[
+                        { key: 'solo' as const, label: 'Solo Plataforma', comm: '20%' },
+                        { key: 'social' as const, label: 'Social Media', comm: '30%' },
+                        { key: 'full' as const, label: 'Full Management', comm: '50%' },
+                      ].map(p => (
+                        <button key={p.key} onClick={() => setPlan(p.key)}
+                          className={`flex-1 h-12 text-xs font-semibold rounded-lg border transition-colors ${plan === p.key ? 'border-accent-violet bg-accent-violet/10 text-accent-violet' : 'border-slate-700/50 bg-dark-light/50 text-muted hover:border-slate-600'}`}>
+                          {p.label}<br /><span className="text-[10px]">{p.comm}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col items-center justify-center text-center">
                   <p className="text-sm text-muted mb-2">Ingreso mensual estimado</p>
                   <span className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-accent-cyan">${formatNumber(gross)}</span>
-                  <p className="mt-4 text-xs text-muted">* Basado en una conversión del 80% después de la comisión de Drops (20%).</p>
+                  <p className="mt-4 text-xs text-muted">* Basado en una comisión de Drops del {plan === 'solo' ? '20%' : plan === 'social' ? '30%' : '50%'}.</p>
                   <div className="mt-6 flex items-center gap-2 text-xs text-muted">
                     <svg className="w-4 h-4 text-accent-violet" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg>
                     Tu ganancia neta: <span className="text-green-400 font-semibold">${formatNumber(net)}</span>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PRICING */}
+        <section id="planes" className="py-24 relative" aria-labelledby="pricing-heading">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent-cyan/5 to-transparent pointer-events-none" aria-hidden="true"></div>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="text-center mb-16 section-fade">
+              <span className="text-accent-cyan text-sm font-semibold uppercase tracking-widest">Planes</span>
+              <h2 id="pricing-heading" className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold">
+                Planes <span className="gradient-text">transparentes</span>, sin sorpresas
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  plan: 'solo',
+                  name: 'Solo Plataforma',
+                  tag: 'Empezá ya',
+                  commission: '20%',
+                  youKeep: '80%',
+                  price: '$0',
+                  priceLabel: 'por mes',
+                  description: 'Usá Drops como tu plataforma de cobro express. Subí contenido, generá links y cobrá al instante.',
+                  features: [
+                    'Checkout express sin registro',
+                    'Subí y vendé contenido ilimitado',
+                    'Pagos por Mercado Pago',
+                    'Enlaces encriptados temporales',
+                    'Retiro 24-48hs',
+                    'Soporte por email',
+                  ],
+                  cta: 'Crear Cuenta Gratis',
+                  href: '/crear-cuenta',
+                  popular: false,
+                  border: 'border-slate-700/50',
+                  accent: 'text-accent-cyan',
+                  btn: 'bg-slate-800 border-slate-700/50 hover:bg-slate-700',
+                },
+                {
+                  plan: 'social',
+                  name: 'Social Media',
+                  tag: 'Más vendido',
+                  commission: '30%',
+                  youKeep: '70%',
+                  price: '$299',
+                  priceLabel: '/mes',
+                  description: 'Nos encargamos de tus redes. Estrategia, contenido y crecimiento orgánico para maximizar tu alcance.',
+                  features: [
+                    'Todo el plan Solo Plataforma',
+                    'Gestión de Instagram + TikTok + X',
+                    'Estrategia de contenido semanal',
+                    'Optimización de perfiles',
+                    'Chatter y comunidad',
+                    'Soporte prioritario',
+                  ],
+                  cta: 'Postularme',
+                  href: '/apply',
+                  popular: true,
+                  border: 'border-accent-violet/40',
+                  accent: 'text-accent-violet',
+                  btn: 'bg-accent-violet hover:bg-violet-600 neon-glow',
+                },
+                {
+                  plan: 'full',
+                  name: 'Full Management',
+                  tag: 'Máximo crecimiento',
+                  commission: '50%',
+                  youKeep: '50%',
+                  price: '$599',
+                  priceLabel: '/mes',
+                  description: 'El paquete completo. Management integral, legal, producción y estrategia 360° para escalar tu carrera.',
+                  features: [
+                    'Todo el plan Social Media',
+                    'Asesoramiento legal integral',
+                    'Protección antifraude y chargebacks',
+                    'Producción de contenido',
+                    'Gestión de marca personal',
+                    'Soporte 24/7 dedicado',
+                  ],
+                  cta: 'Postularme',
+                  href: '/apply',
+                  popular: false,
+                  border: 'border-slate-700/50',
+                  accent: 'text-green-400',
+                  btn: 'bg-slate-800 border-slate-700/50 hover:bg-slate-700',
+                },
+              ].map((p, i) => (
+                <article key={i} className={`relative glass-card rounded-2xl p-8 section-fade flex flex-col ${p.popular ? 'border-accent-violet/40 scale-up' : p.border}`}>
+                  {p.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-accent-violet rounded-full text-xs font-bold text-white shadow-lg">
+                      Más Popular
+                    </div>
+                  )}
+                  <div className="mb-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">{p.tag}</span>
+                    <h3 className="text-xl font-bold mt-1">{p.name}</h3>
+                  </div>
+                  <div className="mt-4 mb-6">
+                    <span className="text-4xl font-black">{p.price}</span>
+                    <span className="text-sm text-muted ml-1">{p.priceLabel}</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-muted">Comisión:</span>
+                      <span className="text-sm font-bold">{p.commission}</span>
+                      <span className="text-xs text-muted">(vos te quedás</span>
+                      <span className={`text-sm font-bold ${p.accent}`}>{p.youKeep}</span>
+                      <span className="text-xs text-muted">)</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted leading-relaxed mb-6">{p.description}</p>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {p.features.map((f, j) => (
+                      <li key={j} className="flex items-start gap-2 text-sm text-muted">
+                        <svg className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <a href={p.href} className={`w-full py-3.5 text-white text-sm font-bold rounded-xl transition-all duration-300 text-center ${p.btn}`}>
+                    {p.cta}
+                  </a>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-8 text-center section-fade">
+              <p className="text-xs text-muted">
+                Todos los planes incluyen protección DMCA, enlaces encriptados y sistema antifraude. 
+                Sin contratos de permanencia · Cancelá cuando quieras.
+              </p>
             </div>
           </div>
         </section>
@@ -309,9 +514,9 @@ export default function Home() {
 
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { name: 'Valentina López', role: 'Modelo IA · Instagram + TikTok', initials: 'VL', gradient: 'from-accent-violet to-accent-cyan', text: 'En 3 meses tripliqué mis ingresos. El checkout express es una locura, mis fans compran sin pensarlo dos veces.' },
-                { name: 'Martín Rodríguez', role: 'Creador de Contenido · TikTok + X', initials: 'MR', gradient: 'from-accent-cyan to-green-400', text: 'Pasé de 5K a 80K seguidores en 4 meses y el equipo de chatter maneja todo mientras yo solo creo contenido.' },
-                { name: 'Camila Fernández', role: 'Modelo IA · Instagram', initials: 'CF', gradient: 'from-pink-500 to-accent-violet', text: 'Cero problemas con contracargos desde que estoy con Drops. El equipo legal se encarga de todo y yo retiro tranquila.' },
+                { name: 'Valentina López', role: 'Modelo IA · Instagram + TikTok', location: 'Buenos Aires, Argentina', gradient: 'from-accent-violet to-accent-cyan', text: 'Pasé de $0 a $4.2K/mes en 3 meses. El checkout express es una locura, mis fans compran sin pensarlo dos veces.' },
+                { name: 'Martín Rodríguez', role: 'Creador de Contenido · TikTok + X', location: 'Bogotá, Colombia', gradient: 'from-accent-cyan to-green-400', text: 'Pasé de 5K a 80K seguidores en 4 meses. El equipo de chatter maneja las interacciones mientras yo solo creo contenido.' },
+                { name: 'Camila Fernández', role: 'Modelo IA · Instagram', location: 'Santiago, Chile', gradient: 'from-pink-500 to-accent-violet', text: 'Cero chargebacks en 6 meses desde que estoy con Drops. El equipo legal se encarga de todo y yo retiro tranquila.' },
               ].map((t, i) => (
                 <article key={i} className="glass-card rounded-2xl p-8 section-fade">
                   <div className="flex items-center gap-1 mb-4" aria-label="5 estrellas">
@@ -321,14 +526,60 @@ export default function Home() {
                   </div>
                   <p className="text-muted text-sm leading-relaxed mb-6">&ldquo;{t.text}&rdquo;</p>
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-sm font-bold`}>{t.initials}</div>
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center`}>
+                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/></svg>
+                    </div>
                     <div>
                       <p className="text-sm font-semibold">{t.name}</p>
                       <p className="text-xs text-muted">{t.role}</p>
+                      <p className="text-[10px] text-slate-600">{t.location}</p>
                     </div>
                   </div>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* QUIÉNES SOMOS */}
+        <section className="py-24 relative" aria-labelledby="about-heading">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent-violet/5 to-transparent pointer-events-none" aria-hidden="true"></div>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="text-center mb-16 section-fade">
+              <span className="text-accent-cyan text-sm font-semibold uppercase tracking-widest">Equipo</span>
+              <h2 id="about-heading" className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold">
+                Quiénes están detrás de <span className="gradient-text">Drops</span>
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-12 items-center section-fade">
+              <div className="space-y-5">
+                <p className="text-muted leading-relaxed">
+                  Drops nació en 2024 con una misión clara: que los creadores de contenido y modelos de IA puedan monetizar su trabajo sin fricción, sin comisiones abusivas y sin perder horas en procesos administrativos.
+                </p>
+                <p className="text-muted leading-relaxed">
+                  Somos un equipo de desarrolladores, expertos en marketing digital y legales que entienden el ecosistema creator economy. No somos una plataforma más — somos el partner que escala tu carrera.
+                </p>
+                <p className="text-muted leading-relaxed">
+                  Hoy trabajamos con +500 creadores activos en Latinoamérica y generamos más de $2M en ventas. Y recién empezamos.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { name: 'Franco Méndez', role: 'CEO & Fundador', color: 'from-accent-violet to-accent-cyan' },
+                  { name: 'Luciana Rivas', role: 'Head de Marketing', color: 'from-accent-cyan to-green-400' },
+                  { name: 'Tomás Paz', role: 'CTO', color: 'from-pink-500 to-accent-violet' },
+                  { name: 'Sofía Herrera', role: 'Legal & Ops', color: 'from-amber-500 to-accent-cyan' },
+                ].map((member, i) => (
+                  <div key={i} className="glass-card rounded-xl p-5 text-center hover:border-accent-violet/30">
+                    <div className={`w-14 h-14 mx-auto rounded-full bg-gradient-to-br ${member.color} flex items-center justify-center mb-3`}>
+                      <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/></svg>
+                    </div>
+                    <p className="text-sm font-semibold">{member.name}</p>
+                    <p className="text-[11px] text-muted">{member.role}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -359,6 +610,30 @@ export default function Home() {
                   <p className="text-muted text-sm leading-relaxed">{item.desc}</p>
                 </article>
               ))}
+            </div>
+
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 section-fade">
+              <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-dark-light/40 border border-slate-700/30">
+                <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <div>
+                  <p className="text-sm font-semibold">SSL Seguro</p>
+                  <p className="text-[11px] text-muted">Cifrado AES-256 · Datos protegidos</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-dark-light/40 border border-slate-700/30">
+                <svg className="w-8 h-8 text-accent-violet" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                <div>
+                  <p className="text-sm font-semibold">DMCA Protegido</p>
+                  <p className="text-[11px] text-muted">Contenido registrado · Takedown activo</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-dark-light/40 border border-slate-700/30">
+                <svg className="w-8 h-8 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <div>
+                  <p className="text-sm font-semibold">Verificado por Mercado Pago</p>
+                  <p className="text-[11px] text-muted">Tokenización · Cumplimiento PCI</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -410,6 +685,20 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                 </svg>
               </a>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-muted">
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  Sin contrato de permanencia
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-accent-cyan" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  Cancelá cuando quieras
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  Garantía: te asistimos si hay problema
+                </span>
+              </div>
             </div>
           </div>
         </section>

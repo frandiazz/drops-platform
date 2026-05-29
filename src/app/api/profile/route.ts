@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('*')
+      .select('stage_name, socials, instagram, tiktok, twitter')
       .eq('id', creatorId)
       .maybeSingle();
 
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
       tiktok: metadata?.tiktok || '',
       twitter: metadata?.twitter || '',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Profile API error:', error);
-    return NextResponse.json({ error: error.message || 'Error' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Error' }, { status: 500 });
   }
 }

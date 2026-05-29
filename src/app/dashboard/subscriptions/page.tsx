@@ -23,14 +23,22 @@ export default function SubscriptionsPage() {
   }, []);
 
   const handleCancel = async (subId: string) => {
-    if (!confirm('¿Estás seguro de cancelar esta suscripción?')) return;
+    if (!confirm('¿Estás seguro de cancelar esta suscripción? El comprador dejará de ser cobrado mensualmente.')) return;
     setCancelling(subId);
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ status: 'canceled' })
-      .eq('id', subId);
-    if (!error) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) { setCancelling(null); return; }
+
+    const res = await fetch('/api/cancel-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ subscriptionId: subId }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
       setSubscriptions(prev => prev.map(s => s.id === subId ? { ...s, status: 'canceled' } : s));
+    } else {
+      alert(data.error || 'Error al cancelar');
     }
     setCancelling(null);
   };

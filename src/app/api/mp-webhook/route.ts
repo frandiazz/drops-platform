@@ -8,23 +8,28 @@ export async function POST(request: Request) {
     const { type, data, action } = body;
 
     const signature = request.headers.get('x-signature');
-    if (signature && process.env.MP_WEBHOOK_SECRET) {
-      const tsMatch = signature.match(/ts=(\d+)/);
-      const v1Match = signature.match(/v1=([a-f0-9]+)/);
-      if (tsMatch && v1Match) {
-        const ts = tsMatch[1];
-        const receivedSig = v1Match[1];
-        const dataId = data?.id || '';
-        const toSign = `id:${dataId};ts:${ts};`;
-        const expectedSig = crypto
-          .createHmac('sha256', process.env.MP_WEBHOOK_SECRET)
-          .update(toSign)
-          .digest('hex');
-        if (expectedSig !== receivedSig) {
-          console.warn('Webhook signature mismatch — ignoring');
-          return NextResponse.json({ success: true });
-        }
-      }
+    const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+    if (!signature || !webhookSecret) {
+      console.warn('Webhook signature or secret missing — rejecting');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const tsMatch = signature.match(/ts=(\d+)/);
+    const v1Match = signature.match(/v1=([a-f0-9]+)/);
+    if (!tsMatch || !v1Match) {
+      console.warn('Webhook signature format invalid — rejecting');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ts = tsMatch[1];
+    const receivedSig = v1Match[1];
+    const dataId = data?.id || '';
+    const toSign = `id:${dataId};ts:${ts};`;
+    const expectedSig = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(toSign)
+      .digest('hex');
+    if (expectedSig !== receivedSig) {
+      console.warn('Webhook signature mismatch — rejecting');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -67,8 +72,28 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         if (subs) {
+          // Check idempotency
+          const { data: existingSale } = await supabase
+            .from('sales')
+            .select('id')
+            .eq('mp_payment_id', paymentId?.toString())
+            .maybeSingle();
+
+          if (existingSale) {
+      console.warn('Duplicate authorized_payment — skipping:', paymentId);
+            return NextResponse.json({ success: true });
+          }
+
+          // Get creator's commission rate
+          const { data: creatorProfile } = await supabase
+            .from('profiles')
+            .select('commission_rate')
+            .eq('id', subs.creator_id)
+            .maybeSingle();
+          const commissionRate = parseFloat(creatorProfile?.commission_rate || 20) / 100;
+
           // Create a sale record for this renewal
-          const commission = parseFloat(subs.amount) * 0.2;
+          const commission = parseFloat(subs.amount) * commissionRate;
           await supabase.from('sales').insert({
             content_id: subs.content_id,
             creator_id: subs.creator_id,

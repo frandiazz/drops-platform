@@ -5,12 +5,15 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { TrendingUp, Users, DollarSign, Package, ArrowUpRight, Repeat } from 'lucide-react';
+import type { Sale } from '@/types';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [statsData, setStatsData] = useState<typeof defaultStats | null>(null);
   const [copied, setCopied] = useState(false);
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://drops-ly.vercel.app';
+  const [fetchError, setFetchError] = useState('');
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  if (!process.env.NEXT_PUBLIC_APP_URL) console.warn('NEXT_PUBLIC_APP_URL no configurado');
 
   const defaultStats = { earnings: 0, sales: 0, content: 0, buyers: 0, subscribers: 0 };
 
@@ -20,26 +23,31 @@ export default function DashboardPage() {
       setUser(session.user);
       const uid = session.user.id;
 
-      const [salesRes, contentRes] = await Promise.all([
-        supabase.from('sales').select('*').eq('creator_id', uid),
-        supabase.from('content').select('id', { count: 'exact', head: true }).eq('creator_id', uid),
-      ]);
-
-      const completedSales = (salesRes.data || []).filter((s: any) => s.payment_status === 'completed');
-      const totalEarnings = completedSales.reduce((sum: number, s: any) => sum + parseFloat(s.creator_earnings || '0'), 0);
-      const uniqueBuyers = new Set(completedSales.map((s: any) => s.buyer_email)).size;
-
-      let subscribers = 0;
       try {
-        const { count } = await supabase
-          .from('subscriptions')
-          .select('id', { count: 'exact', head: true })
-          .eq('creator_id', uid)
-          .eq('status', 'active');
-        subscribers = count || 0;
-      } catch {}
+        const [salesRes, contentRes] = await Promise.all([
+          supabase.from('sales').select('payment_status, creator_earnings, buyer_email').eq('creator_id', uid),
+          supabase.from('content').select('id', { count: 'exact', head: true }).eq('creator_id', uid),
+        ]);
 
-      setStatsData({ earnings: totalEarnings, sales: completedSales.length, content: contentRes.count || 0, buyers: uniqueBuyers, subscribers });
+        const completedSales = ((salesRes.data || []) as unknown as Sale[]).filter((s: Sale) => s.payment_status === 'completed');
+        const totalEarnings = completedSales.reduce((sum: number, s: Sale) => sum + parseFloat(s.creator_earnings || '0'), 0);
+        const uniqueBuyers = new Set(completedSales.map((s: Sale) => s.buyer_email)).size;
+
+        let subscribers = 0;
+        try {
+          const { count } = await supabase
+            .from('subscriptions')
+            .select('id', { count: 'exact', head: true })
+            .eq('creator_id', uid)
+            .eq('status', 'active');
+          subscribers = count || 0;
+        } catch {}
+
+        setStatsData({ earnings: totalEarnings, sales: completedSales.length, content: contentRes.count || 0, buyers: uniqueBuyers, subscribers });
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+        setFetchError('Error al cargar estadísticas');
+      }
     });
   }, []);
 
@@ -77,6 +85,9 @@ export default function DashboardPage() {
   return (
     <div className="p-6 md:p-10">
       <div className="mb-8">
+        {fetchError && (
+          <div role="alert" className="p-3 mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{fetchError}</div>
+        )}
         <h1 className="text-2xl md:text-3xl font-extrabold">
           Bienvenido, <span className="gradient-text">{user?.email?.split('@')[0] || 'Creador'}</span>
         </h1>

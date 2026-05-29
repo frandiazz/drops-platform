@@ -4,6 +4,8 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
 export const metadata: Metadata = {
   title: 'Drops | Monetización Inteligente para Creadores',
   description: 'La agencia de management definitiva para modelos de IA y creadores. Escalamos tu viralidad y monetizamos tu contenido con nuestra plataforma de cobro express sin registros.',
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
     title: 'Drops | Monetización Inteligente para Creadores',
     description: 'Maximizamos tus ingresos de forma inteligente. Vos enfocate en crear.',
     type: 'website',
-    url: 'https://drops-ly.vercel.app',
+    url: siteUrl,
     locale: 'es_AR',
   },
   twitter: {
@@ -37,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@type": "Organization",
               "name": "Drops",
               "description": "Agencia de monetización y management para creadores de contenido y modelos de IA",
-              "url": "https://drops-ly.vercel.app",
+              "url": siteUrl,
             }),
           }}
         />

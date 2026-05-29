@@ -1,17 +1,6 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
 
 export default function Footer() {
-  const [copied, setCopied] = useState(false);
-
-  const copyEmail = () => {
-    navigator.clipboard.writeText('DropsDrops2005@gmail.com');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <footer className="border-t border-slate-800/50 bg-dark-light/30" role="contentinfo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -27,11 +16,15 @@ export default function Footer() {
             <p className="text-muted text-sm leading-relaxed max-w-sm">
               La plataforma de monetización y management para creadores de contenido y modelos de IA. Maximizamos tus ingresos con tecnología de vanguardia.
             </p>
-            <div className="flex gap-4 mt-6">
-              <button onClick={copyEmail} className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all duration-200" aria-label="Copiar email de contacto">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-              </button>
-              {copied && <span className="text-xs text-green-400 self-center">Email copiado!</span>}
+            <div className="flex flex-col gap-2 mt-6 text-sm text-muted">
+              <a href="mailto:hola@drops.agency" className="flex items-center gap-2 hover:text-accent-cyan transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                hola@drops.agency
+              </a>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Buenos Aires, Argentina
+              </span>
             </div>
           </div>
 
@@ -47,12 +40,12 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">Legal</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">Contacto</h4>
             <ul className="space-y-3">
+              <li><a href="mailto:hola@drops.agency" className="block py-2 text-sm text-muted hover:text-white transition-colors">hola@drops.agency</a></li>
+              <li><a href="mailto:dmca@drops.agency" className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</a></li>
               <li><Link href="/terminos" className="block py-2 text-sm text-muted hover:text-white transition-colors">Términos para Creadores</Link></li>
               <li><Link href="/privacidad" className="block py-2 text-sm text-muted hover:text-white transition-colors">Políticas de Privacidad</Link></li>
-              <li><button onClick={copyEmail} className="block py-2 text-sm text-muted hover:text-white transition-colors">Soporte DMCA</button></li>
-              <li><button onClick={copyEmail} className="block py-2 text-sm text-muted hover:text-white transition-colors">Contacto</button></li>
             </ul>
           </div>
         </div>
