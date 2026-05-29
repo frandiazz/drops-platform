@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const userId = user?.id;
@@ -186,8 +187,12 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-sm font-medium text-muted mb-2">Tu link de perfil</label>
                 <div className="flex items-center gap-2 h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-sm">
-                  <LinkIcon className="w-4 h-4 text-accent-cyan" />
+                  <LinkIcon className="w-4 h-4 text-accent-cyan flex-shrink-0" />
                   <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-accent-cyan hover:underline truncate">{profileUrl}</a>
+                  <button onClick={() => { navigator.clipboard.writeText(profileUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                    className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-cyan hover:text-white rounded-lg hover:bg-accent-violet/10 transition-colors flex-shrink-0">
+                    <LinkIcon className="w-3.5 h-3.5" /> {copied ? 'Copiado!' : 'Copiar'}
+                  </button>
                 </div>
               </div>
             )}

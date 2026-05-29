@@ -12,23 +12,35 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
   const [profile, setProfile] = useState<any>(null);
   const [packs, setPacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [profileRes, contentRes] = await Promise.all([
-          fetch(`/api/profile?creatorId=${params.creatorId}`),
-          supabase.from('content').select('id, type, price, subscription_price, title, media_urls').eq('creator_id', params.creatorId).eq('is_active', true),
-        ]);
-
+        const profileRes = await fetch(`/api/profile?creatorId=${params.creatorId}`);
         const profileData = await profileRes.json();
+
+        if (!profileRes.ok) {
+          setLoadError(profileData.error || 'Error al cargar el perfil');
+          setLoading(false);
+          return;
+        }
+
         if (profileData?.id) setProfile(profileData);
-        if (contentRes.data) setPacks(contentRes.data);
       } catch (err) {
-        console.error('Error loading profile:', err);
-      } finally {
-        setLoading(false);
+        setLoadError('Error de conexión');
       }
+
+      try {
+        const contentRes = await supabase
+          .from('content')
+          .select('id, type, price, subscription_price, title, media_urls')
+          .eq('creator_id', params.creatorId)
+          .eq('is_active', true);
+        if (contentRes.data) setPacks(contentRes.data);
+      } catch {}
+
+      setLoading(false);
     };
     loadData();
   }, [params.creatorId]);
@@ -38,7 +50,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
       <>
         <Header />
         <main className="min-h-screen pt-24 pb-16 flex items-center justify-center">
-          <p className="text-muted">Cargando...</p>
+          <p className="text-muted animate-pulse">Cargando...</p>
         </main>
         <Footer />
       </>
@@ -50,8 +62,9 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
       <>
         <Header />
         <main className="min-h-screen pt-24 pb-16 flex items-center justify-center">
-          <div className="text-center">
+          <div className="text-center max-w-md mx-auto px-4">
             <h1 className="text-2xl font-bold mb-4">Creador no encontrado</h1>
+            <p className="text-muted text-sm mb-6">{loadError || 'El enlace es inválido o el creador ya no existe.'}</p>
             <Link href="/" className="text-accent-cyan hover:underline">Volver al inicio</Link>
           </div>
         </main>
