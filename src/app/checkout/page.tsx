@@ -43,6 +43,8 @@ function formatExpiry(value: string): string {
   return digits;
 }
 
+const SANITIZE = (s: string) => s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c] || c));
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -57,24 +59,53 @@ function CheckoutContent() {
   const [arsRate, setArsRate] = useState<number>(1200);
   const [mpReady, setMpReady] = useState(false);
   const [mpInstance, setMpInstance] = useState<any>(null);
+  const [loadingPack, setLoadingPack] = useState(true);
 
-  const packTitle = searchParams.get('title') || 'Premium Content Pack';
-  const packPrice = searchParams.get('price') || '29.99';
-  const creatorId = searchParams.get('creatorId') || '';
-  const packId = searchParams.get('packId') || '';
-  const creatorName = searchParams.get('creator') || '';
-  const creatorAvatar = searchParams.get('avatar') || '';
-  const packType = searchParams.get('type') || 'one_time';
-  const packSubPrice = searchParams.get('subscriptionPrice') || '9.99';
+  const [packTitle, setPackTitle] = useState('Cargando...');
+  const [packPrice, setPackPrice] = useState('0');
+  const [creatorId, setCreatorId] = useState('');
+  const [packId, setPackId] = useState('');
+  const [creatorName, setCreatorName] = useState('');
+  const [creatorAvatar, setCreatorAvatar] = useState('');
+  const [packType, setPackType] = useState<'one_time' | 'subscription'>('one_time');
+  const [packSubPrice, setPackSubPrice] = useState('0');
+
   const displayPrice = packType === 'subscription' ? packSubPrice : packPrice;
 
   useEffect(() => {
+    const pId = searchParams.get('packId') || '';
+    const cId = searchParams.get('creatorId') || '';
+    setPackId(pId);
+    setCreatorId(cId);
+
+    fetch(`/api/pack?packId=${encodeURIComponent(pId)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) {
+          setError('Pack no encontrado');
+          setLoadingPack(false);
+          return;
+        }
+        setPackTitle(SANITIZE(d.title || 'Premium Content Pack'));
+        setPackPrice(String(d.price || '29.99'));
+        setCreatorId(d.creatorId || cId);
+        setCreatorName(SANITIZE(d.creatorName || ''));
+        setCreatorAvatar(d.creatorAvatar || '');
+        setPackType(d.type || 'one_time');
+        setPackSubPrice(String(d.subscriptionPrice || d.price || '9.99'));
+        setLoadingPack(false);
+      })
+      .catch(() => {
+        setError('Error al cargar el producto');
+        setLoadingPack(false);
+      });
+
     fetch('/api/rate').then(r => r.json()).then(d => setArsRate(d.rate)).catch(() => {});
     if (typeof window.MercadoPago !== 'undefined') {
       setMpInstance(new window.MercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || ''));
       setMpReady(true);
     }
-  }, []);
+  }, [searchParams]);
 
   const onMpReady = () => {
     if (typeof window.MercadoPago !== 'undefined') {
@@ -126,6 +157,7 @@ function CheckoutContent() {
           title: packTitle,
           identification: { type: docType, number: docNumber },
           content_type: packType,
+          idempotency_key: crypto.randomUUID(),
         }),
       });
 
@@ -142,10 +174,23 @@ function CheckoutContent() {
     }
   };
 
+  if (loadingPack) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen pt-24 pb-16 flex items-center justify-center">
+          <p className="text-muted animate-pulse">Cargando producto...</p>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
       <main className="min-h-screen pt-24 pb-16">
+        <meta name="referrer" content="no-referrer" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link href={creatorId ? `/c/${creatorId}` : "/"} className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
@@ -283,8 +328,8 @@ function CheckoutContent() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label htmlFor="docType" className="block text-sm font-medium text-muted mb-2">Tipo de doc.</label>
-                        <select id="docType" value={docType} onChange={(e) => setDocType(e.target.value)}
+                        <label htmlFor="input-docType" className="block text-sm font-medium text-muted mb-2">Tipo de doc.</label>
+                        <select id="input-docType" value={docType} onChange={(e) => setDocType(e.target.value)}
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none transition-colors appearance-none">
                           <option value="DNI">DNI</option>
                           <option value="CI">CI</option>
@@ -292,8 +337,8 @@ function CheckoutContent() {
                         </select>
                       </div>
                       <div className="sm:col-span-2">
-                        <label htmlFor="docNumber" className="block text-sm font-medium text-muted mb-2">Número de documento</label>
-                        <input id="docNumber" type="text" inputMode="numeric" value={docNumber} onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, '').slice(0, 20))} required
+                        <label htmlFor="input-docNumber" className="block text-sm font-medium text-muted mb-2">Número de documento</label>
+                        <input id="input-docNumber" type="text" inputMode="numeric" value={docNumber} onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, '').slice(0, 20))} required
                           placeholder="12345678"
                           className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
                       </div>

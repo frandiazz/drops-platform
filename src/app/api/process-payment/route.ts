@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const body = JSON.parse(await request.text());
-    const { token, payment_method_id, amount, buyer_email, creator_id, content_id, title, identification, content_type } = body;
+    const { token, payment_method_id, amount, buyer_email, creator_id, content_id, title, identification, content_type, idempotency_key } = body;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -85,15 +85,46 @@ export async function POST(request: Request) {
     const commission = amount * commissionRate;
     const creatorEarnings = amount - commission;
 
-    const saleAccessToken = crypto.randomUUID();
-    const { data: sale, error: saleError } = await supabase.from('sales').insert({
-      content_id, creator_id, buyer_email, amount, commission,
-      creator_earnings: creatorEarnings,
-      payment_method: 'mercadopago', payment_status: 'pending', access_token: saleAccessToken,
-    }).select().single();
+    // Idempotency: avoid duplicate sale for same buyer+content within last 2 minutes
+    let sale: any = null;
+    if (idempotency_key) {
+      try {
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const { data: recentSale } = await supabase
+          .from('sales')
+          .select('id, access_token, payment_status')
+          .eq('content_id', content_id)
+          .eq('buyer_email', buyer_email)
+          .gte('created_at', fiveMinAgo)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-    if (saleError || !sale) {
-      return NextResponse.json({ error: saleError?.message || 'Failed to create sale' }, { status: 500 });
+        if (recentSale && recentSale.payment_status === 'completed') {
+          return NextResponse.json({ success: true, access_token: recentSale.access_token });
+        }
+        if (recentSale) {
+          sale = recentSale;
+        }
+      } catch {
+        // DB query failed, proceed with new sale
+      }
+    }
+
+    let saleAccessToken = sale?.access_token;
+    if (!sale) {
+      saleAccessToken = crypto.randomUUID();
+      const { data: newSale, error: saleError } = await supabase.from('sales').insert({
+        content_id, creator_id, buyer_email, amount, commission,
+        creator_earnings: creatorEarnings,
+        payment_method: 'mercadopago', payment_status: 'pending',
+        access_token: saleAccessToken,
+      }).select().single();
+
+      if (saleError || !newSale) {
+        return NextResponse.json({ error: saleError?.message || 'Failed to create sale' }, { status: 500 });
+      }
+      sale = newSale;
     }
 
     const amountARS = Math.round(Number(amount) * await fetchRate());
@@ -227,7 +258,7 @@ export async function POST(request: Request) {
     const mpError = mpData.message || mpData.cause?.[0]?.description || mpData.status_detail || 'rechazado';
     return NextResponse.json({ success: false, error: `Pago ${mpData.status}: ${mpError}` }, { status: 402 });
   } catch (error: unknown) {
-    console.error('Error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Error interno' }, { status: 500 });
+    console.error('Payment error:', error);
+    return NextResponse.json({ error: 'Error al procesar el pago' }, { status: 500 });
   }
 }

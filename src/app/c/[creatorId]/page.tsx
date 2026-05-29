@@ -77,7 +77,8 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
   const bio = profile.bio || '';
   const avatarUrl = profile.avatar_url || '';
 
-  const cleanSocial = (val: string) => val.replace(/^@/, '').trim();
+  const SANITIZE = (s: string) => s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c] || c));
+  const cleanSocial = (val: string) => val.replace(/^@/, '').replace(/[^a-zA-Z0-9_.]/g, '').trim();
 
   const socialLinks: { icon: React.ComponentType<{ className?: string }>; href: string; label: string }[] = [];
   if (profile.instagram) socialLinks.push({ icon: Instagram, href: `https://www.instagram.com/${cleanSocial(profile.instagram)}`, label: 'Instagram' });
@@ -119,9 +120,9 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                   const isTiktok = s.toLowerCase().includes('tiktok');
                   const isX = s.toLowerCase().includes('x') || s.toLowerCase().includes('twitter');
                   let raw = s.replace(/^(Instagram|TikTok|X|Twitter|IG):\s*/i, '').trim();
-                  raw = raw.replace(/^@/, '');
+                  raw = raw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.:/?-]/g, '');
                   let href: string;
-                  if (raw.startsWith('http')) {
+                  if (raw.startsWith('https://')) {
                     href = raw;
                   } else if (isInstagram) {
                     href = `https://www.instagram.com/${raw}`;
@@ -131,6 +132,10 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                     href = `https://x.com/${raw}`;
                   } else {
                     href = `https://${raw}`;
+                  }
+                  // Only allow http/https protocols
+                  if (!href.startsWith('http://') && !href.startsWith('https://')) {
+                    href = '#';
                   }
                   return (
                     <a key={`extra-${i}`} href={href} target="_blank" rel="noopener noreferrer" className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg glass flex items-center justify-center text-muted hover:text-accent-violet transition-colors">
@@ -154,7 +159,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
               <p className="text-muted col-span-full text-center py-12">Este creador aún no tiene contenido disponible.</p>
             )}
             {packs.map((pack) => {
-              const checkoutHref = `/checkout?creatorId=${params.creatorId}&packId=${pack.id}&price=${pack.type === 'subscription' ? pack.subscription_price : pack.price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}&type=${pack.type || 'one_time'}&subscriptionPrice=${pack.subscription_price || ''}`;
+              const checkoutHref = `/checkout?creatorId=${params.creatorId}&packId=${pack.id}`;
               return (
                 <div key={pack.id} className="group rounded-xl overflow-hidden glass-card transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
                   <Link href={checkoutHref} className="block">

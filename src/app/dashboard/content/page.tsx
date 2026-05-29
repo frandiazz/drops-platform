@@ -26,10 +26,7 @@ export default function ContentPage() {
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   const getCheckoutUrl = (pack: ContentPack) => {
-    const stageName = user?.user_metadata?.stage_name || 'Creador';
-    const avatarUrl = user?.user_metadata?.avatar_url || '';
-    const price = pack.type === 'subscription' ? pack.subscription_price : pack.price;
-    return `${siteUrl}/checkout?creatorId=${user.id}&packId=${pack.id}&price=${price}&title=${encodeURIComponent(pack.title)}&creator=${encodeURIComponent(stageName)}&avatar=${encodeURIComponent(avatarUrl)}&type=${pack.type || 'one_time'}&subscriptionPrice=${pack.subscription_price || ''}`;
+    return `${siteUrl}/checkout?creatorId=${user.id}&packId=${pack.id}`;
   };
 
   useEffect(() => {

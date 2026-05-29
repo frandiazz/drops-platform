@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const collectionStatus = searchParams.get('collection_status');
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const mpAccessToken = process.env.MP_ACCESS_TOKEN;
 
     if (!supabaseUrl || !supabaseKey || !mpAccessToken) {
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: false });
-  } catch (error: unknown) {
-    console.error('Verify error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Error' }, { status: 500 });
+  } catch {
+    console.error('Verify payment error');
+    return NextResponse.json({ error: 'Error al verificar pago' }, { status: 500 });
   }
 }

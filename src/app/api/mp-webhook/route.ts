@@ -119,6 +119,17 @@ export async function POST(request: Request) {
 
     // Handle one-time payments
     if (type === 'payment' && data?.id) {
+      // Idempotency: check if already processed
+      const paymentIdStr = data.id?.toString();
+      const { data: existingPayment } = await supabase
+        .from('sales')
+        .select('id, payment_status')
+        .eq('mp_payment_id', paymentIdStr)
+        .maybeSingle();
+      if (existingPayment?.payment_status === 'completed') {
+        return NextResponse.json({ success: true });
+      }
+
       const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
         headers: { 'Authorization': `Bearer ${mpAccessToken}` },
       });
@@ -133,7 +144,7 @@ export async function POST(request: Request) {
             .from('sales').select('payment_status').eq('id', saleId).maybeSingle();
           if (existing && existing.payment_status !== 'completed') {
             await supabase.from('sales')
-              .update({ payment_status: 'completed', mp_payment_id: payment.id?.toString() })
+              .update({ payment_status: 'completed', mp_payment_id: paymentIdStr })
               .eq('id', saleId);
           }
         }
@@ -146,7 +157,7 @@ export async function POST(request: Request) {
 
         if (!saleId) {
           const { data: sale } = await supabase.from('sales')
-            .select('id').eq('mp_payment_id', payment.id?.toString()).maybeSingle();
+            .select('id').eq('mp_payment_id', paymentIdStr).maybeSingle();
           if (sale) {
             await supabase.from('sales').update({ payment_status: 'completed' }).eq('id', sale.id);
           }
