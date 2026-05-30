@@ -28,14 +28,37 @@ export async function GET(request: NextRequest) {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('profiles')
       .select('id, stage_name, avatar_url, bio, socials, instagram, tiktok, twitter')
       .eq('id', creatorId)
       .maybeSingle();
 
     if (!profile) {
-      return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 });
+      const { data: authUser } = await supabase.auth.admin.getUserById(creatorId);
+      if (!authUser?.user) {
+        return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 });
+      }
+
+      const meta = authUser.user.user_metadata || {};
+      await supabase.from('profiles').upsert({
+        id: creatorId,
+        email: authUser.user.email || '',
+        stage_name: meta.stage_name || 'Creador',
+        role: 'creator',
+        commission_rate: 20,
+      });
+
+      profile = {
+        id: creatorId,
+        stage_name: meta.stage_name || 'Creador',
+        avatar_url: meta.avatar_url || '',
+        bio: meta.bio || '',
+        socials: meta.socials || '',
+        instagram: meta.instagram || '',
+        tiktok: meta.tiktok || '',
+        twitter: meta.twitter || '',
+      };
     }
 
     return NextResponse.json({
