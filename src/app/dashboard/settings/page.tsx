@@ -82,15 +82,24 @@ export default function SettingsPage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('bucket', 'avatars');
+      if (!accessTokenRef.current) {
+        addToast('Sesión no disponible. Recargá la página.', 'error');
+        return;
+      }
       const res = await fetch('/api/upload-file', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${accessTokenRef.current}` },
         body: formData,
       });
       const data = await res.json();
+      if (!res.ok) {
+        addToast(data.error || 'Error al subir la foto', 'error');
+        return;
+      }
       if (data.url) setAvatarUrl(data.url);
     } catch (err) {
       console.error('Avatar upload error:', err);
+      addToast('Error de conexión al subir la foto', 'error');
     } finally {
       setUploading(false);
     }
