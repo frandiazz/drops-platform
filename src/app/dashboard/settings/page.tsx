@@ -67,7 +67,6 @@ export default function SettingsPage() {
             email: session.user.email || '',
             role: 'creator',
             commission_rate: 20,
-            updated_at: new Date().toISOString(),
           });
         }
       }
@@ -103,7 +102,6 @@ export default function SettingsPage() {
           const { error: upsErr } = await supabase.from('profiles').upsert({
             id: user.id,
             avatar_url: data.url,
-            updated_at: new Date().toISOString(),
           });
           if (upsErr) throw upsErr;
         }
@@ -111,7 +109,8 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error('Avatar upload/save error:', err);
-      addToast('Error al guardar la foto de perfil', 'error');
+      const msg = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String((err as Record<string, unknown>).message) : 'Error al guardar la foto de perfil';
+      addToast(msg, 'error');
     } finally {
       setUploading(false);
     }
@@ -131,7 +130,6 @@ export default function SettingsPage() {
           tiktok,
           twitter,
           email: user.email,
-          updated_at: new Date().toISOString(),
         });
         if (upsertError) throw upsertError;
       }
@@ -151,7 +149,9 @@ export default function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : 'Error al guardar');
+      const message = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String((err as Record<string, unknown>).message) : 'Error al guardar';
+      setSaveError(message);
+      console.error('handleSave error:', err);
     }
   };
 
