@@ -44,10 +44,17 @@ export default function CrearCuentaPage() {
       if (error) throw error;
 
       const userId = data.user?.id;
-      if (userId && data.session?.access_token) {
+      let accessToken = data.session?.access_token;
+
+      if (userId && !accessToken) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        accessToken = signInData.session?.access_token;
+      }
+
+      if (userId && accessToken) {
         await fetch('/api/create-profile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session.access_token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
           body: JSON.stringify({ userId, email }),
         });
       }
@@ -55,7 +62,6 @@ export default function CrearCuentaPage() {
       if (data.session) {
         router.push('/dashboard');
       } else {
-        await supabase.auth.signInWithPassword({ email, password });
         router.push('/dashboard');
       }
     } catch (err: unknown) {
