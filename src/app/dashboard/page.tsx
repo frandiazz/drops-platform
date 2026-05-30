@@ -13,8 +13,7 @@ export default function DashboardPage() {
   const [statsData, setStatsData] = useState<typeof defaultStats | null>(null);
   const [copied, setCopied] = useState(false);
   const [fetchError, setFetchError] = useState('');
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-  if (!process.env.NEXT_PUBLIC_APP_URL) console.warn('NEXT_PUBLIC_APP_URL no configurado');
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
   const defaultStats = { earnings: 0, sales: 0, content: 0, buyers: 0, subscribers: 0 };
 
@@ -136,20 +135,24 @@ export default function DashboardPage() {
 
         <div className="glass-card rounded-xl p-6">
           <h3 className="text-lg font-bold mb-4">Tu link de Drops</h3>
-          <div className="p-3 rounded-lg bg-dark-light/50 border border-slate-700/50">
-            <p className="text-sm text-muted mb-2">Compartí este link con tus fans:</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-sm text-accent-cyan bg-dark/50 px-3 py-2 rounded">
-                {siteUrl.replace('https://','').replace('http://','')}/c/{user?.id || 'tu-usuario'}
-              </code>
-              <button
-                onClick={() => { navigator.clipboard.writeText(`${siteUrl}/c/${user?.id || 'tu-usuario'}`); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                className="px-4 py-3 min-h-[44px] bg-accent-violet/20 text-accent-violet rounded-lg hover:bg-accent-violet/30 transition-colors text-sm font-medium"
-              >
-                {copied ? 'Copiado!' : 'Copiar'}
-              </button>
+          {user ? (
+            <div className="p-3 rounded-lg bg-dark-light/50 border border-slate-700/50">
+              <p className="text-sm text-muted mb-2">Compartí este link con tus fans:</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-sm text-accent-cyan bg-dark/50 px-3 py-2 rounded">
+                  {siteUrl.replace('https://','').replace('http://','')}/c/{user.id}
+                </code>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(`${siteUrl}/c/${user.id}`); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                  className="px-4 py-3 min-h-[44px] bg-accent-violet/20 text-accent-violet rounded-lg hover:bg-accent-violet/30 transition-colors text-sm font-medium"
+                >
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-sm text-muted animate-pulse">Cargando...</p>
+          )}
 
           <div className="mt-6 p-4 rounded-lg bg-accent-violet/5 border border-accent-violet/20">
             <p className="text-sm text-muted">

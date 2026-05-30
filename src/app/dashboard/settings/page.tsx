@@ -103,7 +103,12 @@ export default function SettingsPage() {
         const { error: upsertError } = await supabase.from('profiles').upsert({
           id: user.id,
           stage_name: stageName,
+          avatar_url: avatarUrl,
+          bio,
           socials,
+          instagram,
+          tiktok,
+          twitter,
           email: user.email,
           updated_at: new Date().toISOString(),
         });
