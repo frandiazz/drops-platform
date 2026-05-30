@@ -35,6 +35,7 @@ function CheckoutContent() {
   const [cardName, setCardName] = useState('');
   const [docType, setDocType] = useState('DNI');
   const [docNumber, setDocNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [arsRate, setArsRate] = useState<number>(1200);
@@ -127,7 +128,7 @@ function CheckoutContent() {
         identificationNumber: docNumber,
       });
 
-      const guestEmail = `guest-${crypto.randomUUID().slice(0, 8)}@drops.agency`;
+      if (!email) { setError('Ingresá tu email'); return; }
 
       const res = await fetch('/api/process-payment', {
         method: 'POST',
@@ -136,7 +137,7 @@ function CheckoutContent() {
           token: cardToken.id,
           payment_method_id: cardToken.payment_method?.id || brand,
           amount: parseFloat(displayPrice),
-          buyer_email: guestEmail,
+          buyer_email: email,
           creator_id: creatorId,
           content_id: packId,
           title: packTitle,
@@ -148,6 +149,7 @@ function CheckoutContent() {
 
       const data = await res.json();
       if (data.success) {
+        try { localStorage.setItem('acceso_' + data.access_token, email); } catch {}
         router.push(`/acceder/${data.access_token}`);
       } else {
         setError(data.error || 'Pago rechazado');
@@ -207,6 +209,8 @@ function CheckoutContent() {
               setDocType={setDocType}
               docNumber={docNumber}
               setDocNumber={setDocNumber}
+              email={email}
+              setEmail={setEmail}
               displayPrice={displayPrice}
               arsRate={arsRate}
               packType={packType}

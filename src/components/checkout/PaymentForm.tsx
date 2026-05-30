@@ -17,6 +17,8 @@ interface PaymentFormProps {
   setDocType: (v: string) => void;
   docNumber: string;
   setDocNumber: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
   displayPrice: string;
   arsRate: number;
   packType: 'one_time' | 'subscription';
@@ -34,6 +36,7 @@ export default function PaymentForm({
   cardName, setCardName,
   docType, setDocType,
   docNumber, setDocNumber,
+  email, setEmail,
   displayPrice, arsRate, packType,
   processing, mpReady, error, handlePay,
   onMpReady,
@@ -116,6 +119,13 @@ export default function PaymentForm({
                   placeholder="12345678"
                   className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
               </div>
+            </div>
+            <div>
+              <label htmlFor="input-email" className="block text-sm font-medium text-muted mb-2">Email *</label>
+              <input id="input-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                placeholder="tu@email.com"
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors" />
+              <p className="text-[11px] text-muted mt-1">Usá este email para acceder a tu contenido después de la compra.</p>
             </div>
           </div>
 

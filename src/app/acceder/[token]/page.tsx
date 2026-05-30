@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
-import { XCircle, Clock, CheckCircle, Repeat, ImageIcon, Download, Send } from 'lucide-react';
+import { XCircle, Clock, CheckCircle, Repeat, ImageIcon, Download, Send, Shield } from 'lucide-react';
 import type { Sale, Subscription, ContentPack } from '@/types';
 
 export default function AccessPage({ params }: { params: { token: string } }) {
@@ -16,6 +16,10 @@ export default function AccessPage({ params }: { params: { token: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [signedUrls, setSignedUrls] = useState<string[]>([]);
+  const [verified, setVerified] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [verifyError, setVerifyError] = useState('');
+  const [buyerEmail, setBuyerEmail] = useState('');
   const [downloading, setDownloading] = useState(false);
 
   const downloadFile = async (url: string, index: number) => {
@@ -59,6 +63,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
 
       if (subData) {
         setSubscription(subData);
+        setBuyerEmail(subData.buyer_email || '');
 
         // If pending, try to find linked sale and verify
         if (subData.status === 'pending') {
@@ -122,6 +127,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
       }
 
       setSale(saleData);
+      setBuyerEmail(saleData.buyer_email || '');
 
       if (saleData.content_id) {
         const { data: contentData } = await supabase
@@ -136,6 +142,18 @@ export default function AccessPage({ params }: { params: { token: string } }) {
     };
     fetchData();
   }, [params.token]);
+
+  // Auto-verify from localStorage (same device/browser that paid)
+  useEffect(() => {
+    if (!loading && buyerEmail) {
+      try {
+        const storedEmail = localStorage.getItem('acceso_' + params.token);
+        if (storedEmail === buyerEmail) {
+          setVerified(true);
+        }
+      } catch {}
+    }
+  }, [loading, buyerEmail, params.token]);
 
   // Fetch signed URLs when content is loaded
   useEffect(() => {
@@ -215,6 +233,33 @@ export default function AccessPage({ params }: { params: { token: string } }) {
               <p className="text-xs text-muted">Monto: <span className="text-accent-cyan font-bold">${sale?.amount || subscription?.amount} USD</span></p>
             </div>
             <p className="text-xs text-muted">Si ya pagaste, refrescá la página o esperá unos segundos.</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!verified) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen pt-24 pb-16 flex items-center justify-center">
+          <div className="max-w-sm mx-auto px-4 text-center">
+            <Shield className="w-16 h-16 text-accent-violet mx-auto mb-6" />
+            <h1 className="text-2xl font-bold mb-2">Verificá tu acceso</h1>
+            <p className="text-muted text-sm mb-6">Ingresá el email que usaste al comprar para ver el contenido.</p>
+            <form onSubmit={(e) => { e.preventDefault(); if (verifyEmail.toLowerCase() === buyerEmail.toLowerCase()) { setVerified(true); try { localStorage.setItem('acceso_' + params.token, verifyEmail); } catch {} } else { setVerifyError('Email incorrecto'); } }} className="space-y-4">
+              <input type="email" value={verifyEmail} onChange={(e) => { setVerifyEmail(e.target.value); setVerifyError(''); }} required
+                placeholder="tu@email.com"
+                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors text-center" />
+              {verifyError && <p className="text-xs text-red-400">{verifyError}</p>}
+              <button type="submit"
+                className="w-full h-12 bg-accent-violet text-white font-semibold rounded-xl neon-glow hover:bg-violet-600 transition-all">
+                Verificar acceso
+              </button>
+            </form>
+            <p className="text-xs text-muted mt-6">¿No recordás tu email? <a href="mailto:hola@drops.agency" className="text-accent-cyan hover:underline">Contactanos</a></p>
           </div>
         </main>
         <Footer />
