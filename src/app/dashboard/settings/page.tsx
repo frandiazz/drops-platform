@@ -53,10 +53,23 @@ export default function SettingsPage() {
         // Load commission rate from profiles
         const { data: profile } = await supabase
           .from('profiles')
-          .select('commission_rate')
+          .select('commission_rate, stage_name, avatar_url, bio, socials, instagram, tiktok, twitter')
           .eq('id', session.user.id)
           .maybeSingle();
+
         if (profile?.commission_rate) setCommissionRate(profile.commission_rate);
+
+        // Auto-create profile record if missing
+        if (!profile) {
+          await supabase.from('profiles').upsert({
+            id: session.user.id,
+            stage_name: m.stage_name || 'Creador',
+            email: session.user.email || '',
+            role: 'creator',
+            commission_rate: 20,
+            updated_at: new Date().toISOString(),
+          });
+        }
       }
     });
   }, []);
