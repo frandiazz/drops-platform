@@ -162,7 +162,6 @@ export async function POST(request: Request) {
             frequency: 1,
             frequency_type: 'months',
             transaction_amount: amountARS,
-            currency_id: 'ARS',
           },
           back_url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/acceder/${sub.access_token}`,
           status: 'authorized',
@@ -205,7 +204,6 @@ export async function POST(request: Request) {
       installments: 1,
       payment_method_id: payment_method_id || 'master',
       payer: { email: buyer_email },
-      currency_id: 'ARS',
       metadata: { sale_id: sale.id, content_type: content_type || 'one_time' },
     };
 
