@@ -120,19 +120,6 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaveError('');
     try {
-      const metadata = {
-        stage_name: stageName,
-        bio,
-        socials,
-        avatar_url: avatarUrl,
-        instagram,
-        tiktok,
-        twitter,
-      };
-
-      const { error: updateError } = await supabase.auth.updateUser({ data: metadata });
-      if (updateError) throw updateError;
-
       if (user) {
         const { error: upsertError } = await supabase.from('profiles').upsert({
           id: user.id,
@@ -148,6 +135,18 @@ export default function SettingsPage() {
         });
         if (upsertError) throw upsertError;
       }
+
+      const metadata = {
+        stage_name: stageName,
+        bio,
+        socials,
+        avatar_url: avatarUrl,
+        instagram,
+        tiktok,
+        twitter,
+      };
+      const { error: updateError } = await supabase.auth.updateUser({ data: metadata });
+      if (updateError) console.error('Auth metadata update failed:', updateError);
 
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
