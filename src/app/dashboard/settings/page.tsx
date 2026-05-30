@@ -96,10 +96,22 @@ export default function SettingsPage() {
         addToast(data.error || 'Error al subir la foto', 'error');
         return;
       }
-      if (data.url) setAvatarUrl(data.url);
+      if (data.url) {
+        setAvatarUrl(data.url);
+        if (user) {
+          await supabase.auth.updateUser({ data: { avatar_url: data.url } });
+          const { error: upsErr } = await supabase.from('profiles').upsert({
+            id: user.id,
+            avatar_url: data.url,
+            updated_at: new Date().toISOString(),
+          });
+          if (upsErr) throw upsErr;
+        }
+        addToast('Foto de perfil actualizada', 'success');
+      }
     } catch (err) {
-      console.error('Avatar upload error:', err);
-      addToast('Error de conexión al subir la foto', 'error');
+      console.error('Avatar upload/save error:', err);
+      addToast('Error al guardar la foto de perfil', 'error');
     } finally {
       setUploading(false);
     }
