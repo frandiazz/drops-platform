@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp'];
@@ -7,6 +8,12 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`upload-photo:${ip}`, 10, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });

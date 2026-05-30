@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`withdraw:${ip}`, 10, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -35,44 +42,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Método de retiro inválido' }, { status: 400 });
     }
 
-    // Calculate available balance
-    const { data: sales } = await supabase
-      .from('sales')
-      .select('creator_earnings')
-      .eq('creator_id', user.id)
-      .eq('payment_status', 'completed');
-
-    const totalEarnings = (sales || []).reduce((sum: number, s: { creator_earnings: string }) => sum + parseFloat(s.creator_earnings || '0'), 0);
-
-    const { data: paidWithdrawals } = await supabase
-      .from('withdrawals')
-      .select('amount')
-      .eq('creator_id', user.id)
-      .in('status', ['paid', 'approved', 'pending']);
-
-    const totalWithdrawn = (paidWithdrawals || []).reduce((sum: number, w: { amount: string }) => sum + parseFloat(w.amount || '0'), 0);
-
-    const availableBalance = totalEarnings - totalWithdrawn;
-
-    if (parsedAmount > availableBalance) {
-      return NextResponse.json({
-        error: `Saldo insuficiente. Disponible: $${availableBalance.toFixed(2)} USD`
-      }, { status: 400 });
-    }
-
-    const { error } = await supabase.from('withdrawals').insert({
-      creator_id: user.id,
-      amount: parsedAmount,
-      method,
-      status: 'pending',
+    // Atomic withdrawal via RPC (prevents race conditions)
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('request_withdrawal', {
+      p_creator_id: user.id,
+      p_amount: parsedAmount,
+      p_method: method,
     });
 
-    if (error) {
-      console.error('Withdraw insert error:', error);
+    if (rpcError) {
+      console.error('Withdraw RPC error:', rpcError);
       return NextResponse.json({ error: 'Error al crear solicitud' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, available: availableBalance });
+    if (rpcResult?.error) {
+      return NextResponse.json({ error: rpcResult.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, available: rpcResult.available });
   } catch (err) {
     console.error('Withdraw error:', err);
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });

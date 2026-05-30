@@ -133,18 +133,8 @@ function RegisterForm() {
             <label className="block text-sm font-medium text-muted mb-2">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
-              <input type="email" value={application.email} disabled
+                    <input type="email" value={application.email} disabled
                 className="w-full h-12 rounded-lg bg-dark-light/50 border border-slate-700/50 pl-10 pr-4 text-muted cursor-not-allowed" />
-          </div>
-          <div>
-            <label htmlFor="reg-confirm-password" className="block text-sm font-medium text-muted mb-2">Confirmar contraseña</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
-              <input id="reg-confirm-password" type="password" required minLength={6} value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
-                placeholder="Repetí tu contraseña" />
-            </div>
           </div>
           </div>
         )}
@@ -157,6 +147,17 @@ function RegisterForm() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
               placeholder="Mínimo 6 caracteres" />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="reg-confirm-password" className="block text-sm font-medium text-muted mb-2">Confirmar contraseña</label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" aria-hidden="true" />
+            <input id="reg-confirm-password" type="password" required minLength={6} value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
+              placeholder="Repetí tu contraseña" />
           </div>
         </div>
 

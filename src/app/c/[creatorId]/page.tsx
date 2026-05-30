@@ -7,9 +7,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck, Link as LinkIcon } from 'lucide-react';
+import type { Profile } from '@/types';
 
 export default function CreatorProfilePage({ params }: { params: { creatorId: string } }) {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [packs, setPacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -38,7 +39,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
           .eq('creator_id', params.creatorId)
           .eq('is_active', true);
         if (contentRes.data) setPacks(contentRes.data);
-      } catch {}
+      } catch (err2) { console.error('Pack load error:', err2); }
 
       setLoading(false);
     };
@@ -73,7 +74,7 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
     );
   }
 
-  const stageName = profile.stage_name || profile.stageName || 'Creador';
+  const stageName = profile.stage_name || 'Creador';
   const bio = profile.bio || '';
   const avatarUrl = profile.avatar_url || '';
 

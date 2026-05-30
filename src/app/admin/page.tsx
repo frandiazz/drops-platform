@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 import { Check, X, Copy, CheckCircle, XCircle, Clock, ExternalLink, LogOut, ChevronLeft, DollarSign } from 'lucide-react';
+import Logo from '@/components/Logo';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -27,7 +29,7 @@ interface Application {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [applications, setApplications] = useState<Application[]>([]);
   const [filter, setFilter] = useState<string>('pending');
@@ -134,10 +136,7 @@ export default function AdminPage() {
             <Link href="/" className="text-muted hover:text-white transition-colors" aria-label="Volver">
               <ChevronLeft className="w-5 h-5" aria-hidden="true" />
             </Link>
-            <svg className="w-7 h-7 text-accent-cyan" viewBox="0 0 32 40" fill="none">
-              <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropAdmin2)"/>
-              <defs><linearGradient id="dropAdmin2" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
-            </svg>
+            <Logo size={28} showText={false} />
             <h1 className="text-lg font-bold">Panel Admin</h1>
           </div>
           <div className="flex items-center gap-4">
@@ -225,7 +224,7 @@ export default function AdminPage() {
                 <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
                   {selected.photo_urls?.map((url, i) => (
                     <div key={i} className="w-24 h-32 rounded-xl overflow-hidden flex-shrink-0 border border-slate-700/50">
-                      <img src={url} alt={`Foto ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                      <Image src={url} alt={`Foto ${i + 1}`} width={96} height={128} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>

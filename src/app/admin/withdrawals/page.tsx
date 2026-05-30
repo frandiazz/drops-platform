@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DollarSign, Check, X, ChevronLeft, LogOut, Copy, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import Logo from '@/components/Logo';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -81,10 +82,7 @@ export default function AdminWithdrawalsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="text-muted hover:text-white transition-colors"><ChevronLeft className="w-5 h-5" /></Link>
-            <svg className="w-7 h-7 text-accent-cyan" viewBox="0 0 32 40" fill="none">
-              <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropW2)"/>
-              <defs><linearGradient id="dropW2" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
-            </svg>
+            <Logo size={28} showText={false} />
             <h1 className="text-lg font-bold">Retiros</h1>
           </div>
           <div className="flex items-center gap-4">

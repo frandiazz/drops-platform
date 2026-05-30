@@ -9,9 +9,10 @@ async function fetchRate(): Promise<number> {
     const rateData = await rateRes.json();
     if (rateData?.oficial?.value_avg) return Number(rateData.oficial.value_avg);
     if (rateData?.blue?.value_avg) return Number(rateData.blue.value_avg);
-  } catch {
-    try {
-      const rateRes = await fetch('https://dolarapi.com/v1/dolares', { signal: AbortSignal.timeout(5000) });
+    } catch (err) {
+      console.error('fetchRate primary failed:', err);
+      try {
+        const rateRes = await fetch('https://dolarapi.com/v1/dolares', { signal: AbortSignal.timeout(5000) });
       const rateData = await rateRes.json();
       if (Array.isArray(rateData)) {
         const oficial = rateData.find((d: { casa: string; nombre: string }) => d.casa === 'oficial' || d.nombre === 'Oficial');
@@ -19,7 +20,7 @@ async function fetchRate(): Promise<number> {
         return Number(oficial?.venta || oficial?.compra || blue?.venta || blue?.compra || 1200);
       }
       if (rateData?.venta) return Number(rateData.venta);
-    } catch {}
+    } catch (err2) { console.error('fetchRate fallback failed:', err2); }
   }
   return rate;
 }
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   try {
     // Rate limit: 10 payment attempts per IP per minute
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateCheck = checkRateLimit(`payment:${ip}`, 10, 60000);
+    const rateCheck = await checkRateLimit(`payment:${ip}`, 10, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: 'Demasiados intentos. Esperá un momento.' }, { status: 429 });
     }
@@ -106,8 +107,8 @@ export async function POST(request: Request) {
         if (recentSale) {
           sale = recentSale;
         }
-      } catch {
-        // DB query failed, proceed with new sale
+      } catch (err) {
+        console.error('Idempotency check failed:', err);
       }
     }
 

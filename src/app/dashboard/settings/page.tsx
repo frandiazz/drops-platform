@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
-import { User, Mail, Save, Camera, Link as LinkIcon, Instagram, Music2, Twitter, Globe, Shield, AlertTriangle } from 'lucide-react';
+import Image from 'next/image';
+import { User as UserIcon, Mail, Save, Camera, Link as LinkIcon, Instagram, Music2, Twitter, Globe, Shield, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/components/Toast';
+import type { User } from '@supabase/supabase-js';
+
+const ConfirmDialog = dynamic(() => import('@/components/ConfirmDialog'), { ssr: false });
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { addToast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
   const [stageName, setStageName] = useState('');
   const [bio, setBio] = useState('');
   const [socials, setSocials] = useState('');
@@ -20,8 +27,10 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [copied, setCopied] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const accessTokenRef = useRef<string>('');
 
   const userId = user?.id;
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -30,6 +39,7 @@ export default function SettingsPage() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        accessTokenRef.current = session.access_token;
         setUser(session.user);
         const m = session.user.user_metadata || {};
         setStageName(m.stage_name || '');
@@ -59,11 +69,15 @@ export default function SettingsPage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('bucket', 'avatars');
-      const res = await fetch('/api/upload-file', { method: 'POST', body: formData });
+      const res = await fetch('/api/upload-file', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessTokenRef.current}` },
+        body: formData,
+      });
       const data = await res.json();
       if (data.url) setAvatarUrl(data.url);
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('Avatar upload error:', err);
     } finally {
       setUploading(false);
     }
@@ -104,7 +118,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm('¿Estás segura? Esta acción eliminará tu cuenta, todo tu contenido y no podrá deshacerse.')) return;
+    setConfirmDelete(false);
     setDeleting(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return;
@@ -118,10 +132,11 @@ export default function SettingsPage() {
         await supabase.auth.signOut();
         router.push('/');
       } else {
-        alert(data.error || 'Error al eliminar cuenta');
+        addToast(data.error || 'Error al eliminar cuenta', 'error');
       }
-    } catch {
-      alert('Error del servidor');
+    } catch (err) {
+      console.error('Account deletion error:', err);
+      addToast('Error del servidor', 'error');
     } finally {
       setDeleting(false);
     }
@@ -147,7 +162,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-6">
             <div className="relative w-20 h-20 rounded-full overflow-hidden bg-dark-light/80 border border-slate-700/50 flex-shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="Foto de perfil" loading="lazy" className="w-full h-full object-cover" />
+                <Image src={avatarUrl} alt="Foto de perfil" width={80} height={80} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-muted">
                   {stageName?.charAt(0)?.toUpperCase() || '?'}
@@ -171,7 +186,7 @@ export default function SettingsPage() {
         {/* Profile */}
         <div className="glass-card rounded-xl p-6">
           <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-            <User className="w-5 h-5 text-accent-violet" />
+            <UserIcon className="w-5 h-5 text-accent-violet" />
             Perfil público
           </h3>
           <div className="space-y-4">
@@ -303,7 +318,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4 p-4 rounded-lg bg-dark-light/50">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-dark-light/80 flex-shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="Foto de perfil" loading="lazy" className="w-full h-full object-cover" />
+                <Image src={avatarUrl} alt="Foto de perfil" width={48} height={48} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted">{stageName?.charAt(0)?.toUpperCase() || '?'}</div>
               )}
@@ -354,7 +369,7 @@ export default function SettingsPage() {
           <h3 className="text-lg font-bold mb-4 text-red-400">Zona de peligro</h3>
           <p className="text-sm text-muted mb-4">Al eliminar tu cuenta, perderás acceso a todo tu contenido y ganancias pendientes.</p>
           <button
-            onClick={handleDeleteAccount}
+            onClick={() => setConfirmDelete(true)}
             disabled={deleting}
             className="px-6 py-3 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium disabled:opacity-50"
           >
@@ -362,6 +377,16 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Eliminar cuenta"
+        message="¿Estás segura? Esta acción eliminará tu cuenta, todo tu contenido y no podrá deshacerse."
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

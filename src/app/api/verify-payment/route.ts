@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`verify-payment:${ip}`, 20, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const { searchParams } = request.nextUrl;
     const saleId = searchParams.get('sale_id');
     const paymentId = searchParams.get('payment_id');
     const collectionStatus = searchParams.get('collection_status');
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (saleId && !UUID_REGEX.test(saleId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    if (paymentId && !UUID_REGEX.test(paymentId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -104,8 +115,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: false });
-  } catch {
-    console.error('Verify payment error');
+  } catch (err) {
+    console.error('Verify payment error:', err);
     return NextResponse.json({ error: 'Error al verificar pago' }, { status: 500 });
   }
 }

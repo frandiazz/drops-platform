@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   try {
     // Rate limit: 10 registration attempts per IP per hour
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateCheck = checkRateLimit(`register:${ip}`, 10, 3600000);
+    const rateCheck = await checkRateLimit(`register:${ip}`, 10, 3600000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: 'Demasiados intentos. Intentá más tarde.' }, { status: 429 });
     }

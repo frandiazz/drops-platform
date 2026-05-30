@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`rate:${ip}`, 60, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const res = await fetch('https://dolarapi.com/v1/dolares');
     const data = await res.json();
 
@@ -21,7 +28,8 @@ export async function GET() {
       source: oficial?.casa || 'blue',
       updated: oficial?.fechaActualizacion || new Date().toISOString(),
     });
-  } catch {
+  } catch (err) {
+    console.error('Rate API error:', err);
     return NextResponse.json({ rate: 1200, source: 'fallback' });
   }
 }

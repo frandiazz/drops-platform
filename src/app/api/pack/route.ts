@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`pack:${ip}`, 60, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const packId = searchParams.get('packId');
 
     if (!packId) {
       return NextResponse.json({ error: 'packId required' }, { status: 400 });
     }
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (packId && !UUID_REGEX.test(packId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -47,7 +57,8 @@ export async function GET(request: Request) {
       creatorName: profile?.stage_name || 'Creador',
       creatorAvatar: profile?.avatar_url || '',
     });
-  } catch {
+  } catch (err) {
+    console.error('Pack API error:', err);
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
 }

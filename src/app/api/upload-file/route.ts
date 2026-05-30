@@ -5,9 +5,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    // Rate limit: 20 uploads per IP per minute
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateCheck = checkRateLimit(`upload:${ip}`, 20, 60000);
+    const rateCheck = await checkRateLimit(`upload:${ip}`, 20, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: 'Demasiadas subidas. Esperá un momento.' }, { status: 429 });
     }
@@ -18,6 +17,25 @@ export async function POST(request: Request) {
     const bucket = (formData.get('bucket') as string) || 'content';
     if (!allowedBuckets.includes(bucket)) {
       return NextResponse.json({ error: 'Bucket no permitido' }, { status: 400 });
+    }
+
+    if (bucket !== 'applications') {
+      const authHeader = request.headers.get('authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !supabaseKey) {
+        return NextResponse.json({ error: 'Missing config' }, { status: 500 });
+      }
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const token = authHeader.slice(7);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+      }
     }
 
     if (!file) {
@@ -33,7 +51,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Tipo de archivo no permitido. Solo imágenes, videos y PDF.' }, { status: 400 });
     }
 
-    // Validate extension matches MIME
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     const extMap: Record<string, string[]> = {
       jpeg: ['image/jpeg'], jpg: ['image/jpeg'],
@@ -51,7 +68,6 @@ export async function POST(request: Request) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json({ error: 'Missing config' }, { status: 500 });
     }
@@ -60,7 +76,6 @@ export async function POST(request: Request) {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const fileName = `${bucket}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { data, error } = await supabase.storage

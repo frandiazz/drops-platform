@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,12 @@ async function getAdminUser(token: string) {
 
 export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`admin-apps:${ip}`, 30, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -44,13 +51,20 @@ export async function GET(request: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ applications: data, total: count, page, hasMore: (data || []).length === pageSize });
-  } catch {
+  } catch (err) {
+    console.error('Admin applications list error:', err);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`admin-apps:${ip}`, 20, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -83,7 +97,8 @@ export async function PATCH(request: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ application: data });
-  } catch {
+  } catch (err) {
+    console.error('Admin applications review error:', err);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

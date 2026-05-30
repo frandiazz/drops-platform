@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function CrearCuentaPage() {
   const router = useRouter();
@@ -43,10 +44,10 @@ export default function CrearCuentaPage() {
       if (error) throw error;
 
       const userId = data.user?.id;
-      if (userId) {
+      if (userId && data.session?.access_token) {
         await fetch('/api/create-profile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session.access_token}` },
           body: JSON.stringify({ userId, email }),
         });
       }
@@ -73,11 +74,7 @@ export default function CrearCuentaPage() {
 
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <svg className="w-10 h-10 text-accent-cyan" viewBox="0 0 32 40" fill="none">
-              <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropCrear)"/>
-              <defs><linearGradient id="dropCrear" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
-            </svg>
-            <span className="text-2xl font-bold">Drops</span>
+            <Logo size={40} />
           </div>
           <h1 className="text-2xl font-extrabold">Crear Cuenta</h1>
           <p className="text-muted mt-2 text-sm">Empezá a usar la plataforma</p>

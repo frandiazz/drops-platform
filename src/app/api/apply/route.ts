@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   try {
     // Rate limit: 5 applications per IP per hour
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateCheck = checkRateLimit(`apply:${ip}`, 5, 3600000);
+    const rateCheck = await checkRateLimit(`apply:${ip}`, 5, 3600000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá más tarde.' }, { status: 429 });
     }

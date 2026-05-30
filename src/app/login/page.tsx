@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import Logo from '@/components/Logo';
+import { useToast } from '@/components/Toast';
 
 export default function LoginPage() {
+  const { addToast } = useToast();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,11 +50,7 @@ export default function LoginPage() {
 
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <svg className="w-10 h-10 text-accent-cyan" viewBox="0 0 32 40" fill="none">
-              <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropLogin)"/>
-              <defs><linearGradient id="dropLogin" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
-            </svg>
-            <span className="text-2xl font-bold">Drops</span>
+            <Logo size={40} />
           </div>
           <h1 className="text-2xl font-extrabold">Iniciar Sesión</h1>
           <p className="text-muted mt-2 text-sm">Accedé a tu panel de creador</p>
@@ -96,7 +95,7 @@ export default function LoginPage() {
             </Link>
           </p>
           <div className="text-center">
-            <button type="button" onClick={() => { if (email) { supabase.auth.resetPasswordForEmail(email); alert('Si el email existe, recibirás un link de recuperación.'); } else { alert('Ingresá tu email primero.'); } }} className="text-xs text-muted hover:text-accent-cyan transition-colors py-2">
+            <button type="button" onClick={() => { if (email) { supabase.auth.resetPasswordForEmail(email); addToast('Si el email existe, recibirás un link de recuperación.', 'info'); } else { addToast('Ingresá tu email primero.', 'error'); } }} className="text-xs text-muted hover:text-accent-cyan transition-colors py-2">
               ¿Olvidaste tu contraseña?
             </button>
           </div>

@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
-import { CheckCircle, Clock, XCircle, Download, Send, Image as ImageIcon, Repeat } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { XCircle, Clock, CheckCircle, Repeat, ImageIcon, Download, Send } from 'lucide-react';
+import type { Sale, Subscription, ContentPack } from '@/types';
 
 export default function AccessPage({ params }: { params: { token: string } }) {
-  const [sale, setSale] = useState<any>(null);
-  const [content, setContent] = useState<any>(null);
-  const [subscription, setSubscription] = useState<any>(null);
+  const [sale, setSale] = useState<Sale | null>(null);
+  const [content, setContent] = useState<Partial<ContentPack> | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [signedUrls, setSignedUrls] = useState<string[]>([]);
@@ -50,11 +50,10 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 await supabase.from('subscriptions').update({ status: 'active' }).eq('id', subData.id);
                 subData.status = 'active';
               }
-            } catch {}
+            } catch (err2) { console.error('Verify payment error:', err2); }
           }
         }
 
-        setSale(subData);
         if (subData.content_id) {
           const { data: contentData } = await supabase
             .from('content')
@@ -88,7 +87,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
           if (result.success) {
             saleData.payment_status = 'completed';
           }
-        } catch {}
+        } catch (err2) { console.error('Verify pending payment error:', err2); }
       }
 
       setSale(saleData);
@@ -163,7 +162,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
           <div className="text-center max-w-md mx-auto px-4">
             <Clock className="w-16 h-16 text-red-400 mx-auto mb-6" />
             <h1 className="text-2xl font-bold mb-2">Suscripción expirada</h1>
-            <p className="text-muted mb-4">Tu suscripción venció el {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+            <p className="text-muted mb-4">Tu suscripción venció el {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}.</p>
             <p className="text-xs text-muted mb-6"><a href="mailto:hola@drops.agency" className="text-accent-cyan hover:underline">Contactanos</a> para renovar.</p>
           </div>
         </main>
@@ -213,9 +212,11 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                   {isAboutToExpire ? 'Suscripción por vencer' : 'Suscripción activa'}
                 </p>
                 <p className="text-xs text-muted">
-                  {isAboutToExpire
-                    ? `Vence el ${new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}. Renová pronto para no perder el acceso.`
-                    : `Vigente hasta ${new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}`
+                  {subscription.current_period_end
+                    ? (isAboutToExpire
+                      ? `Vence el ${new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}. Renová pronto para no perder el acceso.`
+                      : `Vigente hasta ${new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}`)
+                    : '—'
                   }
                 </p>
               </div>
@@ -269,7 +270,7 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 </div>
               )}
 
-              {content.delivery_type === 'download' && content.media_urls?.length > 0 && (
+              {content.delivery_type === 'download' && content.media_urls && content.media_urls.length > 0 && (
                 <a href={content.media_urls[0]} download
                   className="w-full flex items-center justify-center gap-2 py-3 bg-accent-violet text-white font-semibold rounded-xl neon-glow hover:bg-violet-600 transition-all">
                   <Download className="w-5 h-5" /> Descargar contenido
@@ -280,11 +281,11 @@ export default function AccessPage({ params }: { params: { token: string } }) {
 
           <div className="glass-card rounded-xl p-6 text-center">
             <p className="text-xs text-muted mb-2">
-              {subscription ? 'Suscripción iniciada el' : 'Compra realizada el'} {sale?.created_at ? new Date(sale.created_at).toLocaleDateString('es-AR') : '—'}
+              {subscription ? 'Suscripción iniciada el' : 'Compra realizada el'} {(subscription?.created_at || sale?.created_at) ? new Date(subscription?.created_at || sale!.created_at).toLocaleDateString('es-AR') : '—'}
             </p>
             {subscription && (
               <p className="text-xs text-muted mb-1">
-                Próximo vencimiento: {new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                Próximo vencimiento: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
               </p>
             )}
             <p className="text-xs text-muted">¿Dudas? <a href="mailto:hola@drops.agency" className="text-accent-cyan hover:underline">Contactanos</a></p>

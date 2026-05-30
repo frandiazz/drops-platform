@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
+import Logo from '@/components/Logo';
 import { LayoutDashboard, Upload, DollarSign, Settings, LogOut, Droplets, Repeat } from 'lucide-react';
 
 const navItems = [
@@ -17,7 +19,7 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isLoginPage = pathname === '/dashboard/login';
@@ -71,11 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="hidden md:flex flex-col w-64 border-r border-slate-800/50 bg-dark-light/30">
         <div className="p-6">
           <Link href="/" className="flex items-center gap-2">
-            <svg className="w-7 h-7 text-accent-cyan" viewBox="0 0 32 40" fill="none">
-              <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropGrad3)"/>
-              <defs><linearGradient id="dropGrad3" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
-            </svg>
-            <span className="text-lg font-bold">Drops</span>
+            <Logo size={28} />
           </Link>
         </div>
 

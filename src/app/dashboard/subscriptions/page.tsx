@@ -1,13 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Repeat, Mail, Calendar, XCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/Toast';
+
+const ConfirmDialog = dynamic(() => import('@/components/ConfirmDialog'), { ssr: false });
 
 export default function SubscriptionsPage() {
+  const { addToast } = useToast();
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -23,7 +29,7 @@ export default function SubscriptionsPage() {
   }, []);
 
   const handleCancel = async (subId: string) => {
-    if (!confirm('¿Estás seguro de cancelar esta suscripción? El comprador dejará de ser cobrado mensualmente.')) return;
+    setConfirmCancel(null);
     setCancelling(subId);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) { setCancelling(null); return; }
@@ -37,8 +43,9 @@ export default function SubscriptionsPage() {
     const data = await res.json();
     if (data.success) {
       setSubscriptions(prev => prev.map(s => s.id === subId ? { ...s, status: 'canceled' } : s));
+      addToast('Suscripción cancelada', 'success');
     } else {
-      alert(data.error || 'Error al cancelar');
+      addToast(data.error || 'Error al cancelar', 'error');
     }
     setCancelling(null);
   };
@@ -109,7 +116,7 @@ export default function SubscriptionsPage() {
                     </div>
                     {sub.status === 'active' && (
                       <button
-                        onClick={() => handleCancel(sub.id)}
+                        onClick={() => setConfirmCancel(sub.id)}
                         disabled={cancelling === sub.id}
                         className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                       >
@@ -132,6 +139,16 @@ export default function SubscriptionsPage() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmCancel !== null}
+        title="Cancelar suscripción"
+        message="¿Estás seguro de cancelar esta suscripción? El comprador dejará de ser cobrado mensualmente."
+        confirmLabel="Cancelar"
+        variant="warning"
+        onConfirm={() => confirmCancel && handleCancel(confirmCancel)}
+        onCancel={() => setConfirmCancel(null)}
+      />
     </div>
   );
 }

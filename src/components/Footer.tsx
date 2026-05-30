@@ -1,17 +1,15 @@
+import { memo } from 'react';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
-export default function Footer() {
+const Footer = memo(function Footer() {
   return (
     <footer className="border-t border-slate-800/50 bg-dark-light/30" role="contentinfo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <svg className="w-7 h-7 text-accent-cyan" viewBox="0 0 32 40" fill="none" aria-hidden="true">
-                <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropGrad2)"/>
-                <defs><linearGradient id="dropGrad2" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
-              </svg>
-              <span className="text-lg font-bold">Drops</span>
+              <Logo size={28} />
             </Link>
             <p className="text-muted text-sm leading-relaxed max-w-sm">
               La plataforma de monetización y management para creadores de contenido y modelos de IA. Maximizamos tus ingresos con tecnología de vanguardia.
@@ -57,4 +55,6 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+});
+
+export default Footer;

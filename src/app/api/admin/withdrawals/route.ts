@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,12 @@ async function getAdmin(token: string) {
 
 export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`admin-withdrawals:${ip}`, 30, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -58,13 +65,20 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ withdrawals: enriched });
-  } catch {
+  } catch (err) {
+    console.error('Admin withdrawals list error:', err);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`admin-withdrawals:${ip}`, 20, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -73,6 +87,9 @@ export async function PATCH(request: Request) {
 
     const body = await request.json();
     const { withdrawalId, status } = body;
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (withdrawalId && !UUID_REGEX.test(withdrawalId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
     if (!withdrawalId || !['approved', 'paid', 'rejected'].includes(status)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -115,7 +132,8 @@ export async function PATCH(request: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ withdrawal: data });
-  } catch {
+  } catch (err) {
+    console.error('Admin withdrawals update error:', err);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

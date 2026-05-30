@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`mp-webhook:${ip}`, 30, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const rawBody = await request.text();
     const body = JSON.parse(rawBody);
     const { type, data, action } = body;
@@ -166,7 +173,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('MP webhook error:', err);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

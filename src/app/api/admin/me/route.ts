@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateCheck = await checkRateLimit(`admin-me:${ip}`, 30, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ admin: false }, { status: 401 });
 
@@ -24,7 +31,8 @@ export async function GET(request: Request) {
 
     const isAdmin = profile?.role === 'admin';
     return NextResponse.json({ admin: isAdmin, user: { id: user.id, email: user.email } });
-  } catch {
+  } catch (err) {
+    console.error('Admin me error:', err);
     return NextResponse.json({ admin: false }, { status: 500 });
   }
 }

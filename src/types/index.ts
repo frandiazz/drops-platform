@@ -42,7 +42,7 @@ export interface ContentPack {
 
 export interface Sale {
   id: string;
-  creator_id: string;
+  creator_id?: string;
   buyer_email: string;
   content_id: string;
   amount: number;
@@ -59,7 +59,7 @@ export interface Sale {
 
 export interface Subscription {
   id: string;
-  creator_id: string;
+  creator_id?: string;
   buyer_email: string;
   content_id: string;
   status: 'pending' | 'active' | 'cancelled' | 'expired';

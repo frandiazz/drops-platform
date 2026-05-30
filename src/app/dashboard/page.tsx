@@ -6,9 +6,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { TrendingUp, Users, DollarSign, Package, ArrowUpRight, Repeat } from 'lucide-react';
 import type { Sale } from '@/types';
+import type { User } from '@supabase/supabase-js';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [statsData, setStatsData] = useState<typeof defaultStats | null>(null);
   const [copied, setCopied] = useState(false);
   const [fetchError, setFetchError] = useState('');
@@ -41,7 +42,7 @@ export default function DashboardPage() {
             .eq('creator_id', uid)
             .eq('status', 'active');
           subscribers = count || 0;
-        } catch {}
+        } catch (err2) { console.error('Sub count error:', err2); }
 
         setStatsData({ earnings: totalEarnings, sales: completedSales.length, content: contentRes.count || 0, buyers: uniqueBuyers, subscribers });
       } catch (err) {

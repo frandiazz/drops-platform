@@ -1,37 +1,36 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Trash2, Plus, X, Pencil, Link as LinkIcon, Check } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { Image as ImageIcon, Plus, Pencil, Trash2, Link as LinkIcon, Check } from 'lucide-react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import type { ContentPack } from '@/types';
+import type { ContentFormData } from '@/components/dashboard/ContentForm';
+import { useToast } from '@/components/Toast';
+import type { User } from '@supabase/supabase-js';
+
+const ContentForm = dynamic(() => import('@/components/dashboard/ContentForm'), { ssr: false });
+const ConfirmDialog = dynamic(() => import('@/components/ConfirmDialog'), { ssr: false });
 
 export default function ContentPage() {
-  const [user, setUser] = useState<any>(null);
+  const { addToast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
   const [packs, setPacks] = useState<ContentPack[]>([]);
-  const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('25');
-  const [deliveryType, setDeliveryType] = useState('download');
-  const [telegramLink, setTelegramLink] = useState('');
-  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingPack, setEditingPack] = useState<ContentPack | null>(null);
-  const [isActive, setIsActive] = useState(true);
-  const [contentType, setContentType] = useState<'one_time' | 'subscription'>('one_time');
-  const [subscriptionPrice, setSubscriptionPrice] = useState('25');
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const accessTokenRef = useRef<string>('');
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
-  const getCheckoutUrl = (pack: ContentPack) => {
-    return `${siteUrl}/checkout?creatorId=${user.id}&packId=${pack.id}`;
-  };
+  const getCheckoutUrl = (pack: ContentPack) => `${siteUrl}/checkout?creatorId=${user?.id || ''}&packId=${pack.id}`;
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        accessTokenRef.current = session.access_token;
         setUser(session.user);
         const { data } = await supabase
           .from('content')
@@ -43,42 +42,6 @@ export default function ContentPage() {
     });
   }, []);
 
-  const handleFileUpload = useCallback(async (file: File) => {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('bucket', 'content');
-      const res = await fetch('/api/upload-file', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url) {
-        setUploadedUrls((prev) => [...prev, data.url]);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
-    }
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      const files = Array.from(e.dataTransfer.files);
-      files.forEach(handleFileUpload);
-    },
-    [handleFileUpload]
-  );
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) Array.from(files).forEach(handleFileUpload);
-  };
-
   const loadPacks = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -89,87 +52,72 @@ export default function ContentPage() {
     if (data) setPacks(data as unknown as ContentPack[]);
   };
 
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setPrice('25');
-    setDeliveryType('download');
-    setTelegramLink('');
-    setUploadedUrls([]);
-    setIsActive(true);
-    setContentType('one_time');
-    setSubscriptionPrice('25');
-    setEditingPack(null);
-  };
-
   const openNewForm = () => {
-    resetForm();
+    setEditingPack(null);
     setShowForm(true);
   };
 
-  const openEditForm = (pack: ContentPack) => {
+  const openEditForm = useCallback((pack: ContentPack) => {
     setEditingPack(pack);
-    setTitle(pack.title);
-    setDescription(pack.description || '');
-    setPrice(pack.price.toString());
-    setDeliveryType(pack.delivery_type || 'download');
-    setTelegramLink(pack.telegram_link || '');
-    setUploadedUrls(pack.media_urls || []);
-    setIsActive(pack.is_active !== false);
-    setContentType(pack.type || 'one_time');
-    setSubscriptionPrice(pack.subscription_price?.toString() || pack.price.toString());
     setShowForm(true);
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const closeForm = useCallback(() => {
+    setShowForm(false);
+    setEditingPack(null);
+  }, []);
+
+  const handleSave = useCallback(async (data: ContentFormData) => {
     if (!user) return;
 
-    const parsedPrice = parseFloat(price);
-    const parsedSubPrice = parseFloat(subscriptionPrice);
+    const parsedPrice = parseFloat(data.price);
+    const parsedSubPrice = parseFloat(data.subscriptionPrice);
 
-    if (contentType === 'one_time' && (isNaN(parsedPrice) || parsedPrice <= 0)) {
-      alert('El precio debe ser mayor a 0');
+    if (data.contentType === 'one_time' && (isNaN(parsedPrice) || parsedPrice <= 0)) {
+      addToast('El precio debe ser mayor a 0', 'error');
       return;
     }
-    if (contentType === 'subscription' && (isNaN(parsedSubPrice) || parsedSubPrice <= 0)) {
-      alert('El precio de suscripción debe ser mayor a 0');
+    if (data.contentType === 'subscription' && (isNaN(parsedSubPrice) || parsedSubPrice <= 0)) {
+      addToast('El precio de suscripción debe ser mayor a 0', 'error');
       return;
     }
 
     const payload: Partial<ContentPack> & { type?: string; subscription_price?: number | null } = {
-      title,
-      description,
-      price: contentType === 'one_time' ? parsedPrice : 0,
-      media_urls: uploadedUrls,
-      delivery_type: deliveryType as ContentPack['delivery_type'],
-      telegram_link: telegramLink || null,
-      is_active: isActive,
-      type: contentType,
-      subscription_price: contentType === 'subscription' ? parseFloat(subscriptionPrice) : null,
+      title: data.title,
+      description: data.description,
+      price: data.contentType === 'one_time' ? parsedPrice : 0,
+      media_urls: data.uploadedUrls,
+      delivery_type: data.deliveryType as ContentPack['delivery_type'],
+      telegram_link: data.telegramLink || null,
+      is_active: data.isActive,
+      type: data.contentType,
+      subscription_price: data.contentType === 'subscription' ? parsedSubPrice : null,
     };
-    if (contentType === 'one_time') {
-      payload.price = parseFloat(price);
+    if (data.contentType === 'one_time') {
+      payload.price = parsedPrice;
       payload.subscription_price = null;
     } else {
       payload.price = 0;
-      payload.subscription_price = parseFloat(subscriptionPrice);
+      payload.subscription_price = parsedSubPrice;
     }
+
     if (editingPack) {
       await supabase.from('content').update(payload).eq('id', editingPack.id);
     } else {
       await supabase.from('content').insert({ ...payload, creator_id: user.id });
     }
+
     await loadPacks();
     setShowForm(false);
-    resetForm();
-  };
+    setEditingPack(null);
+  }, [user, editingPack, addToast, loadPacks]);
 
   const handleDelete = async (packId: string) => {
-    if (!confirm('¿Eliminar este pack? Los compradores perderán el acceso al contenido.')) return;
-    setDeleting(packId);
+    setConfirmDelete(null);
+    setDeleting(true);
     await supabase.from('content').delete().eq('id', packId);
     setPacks(prev => prev.filter(p => p.id !== packId));
-    setDeleting(null);
+    setDeleting(false);
   };
 
   return (
@@ -181,189 +129,20 @@ export default function ContentPage() {
           </h1>
           <p className="text-muted mt-1">Subí tus packs de contenido para que tus fans puedan comprarlos.</p>
         </div>
-        <button
-          onClick={openNewForm}
-          className="px-4 py-2.5 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-2"
-        >
+        <button onClick={openNewForm} className="px-4 py-2.5 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all flex items-center gap-2">
           <Plus className="w-5 h-5" />
           <span className="hidden sm:inline">Nuevo pack</span>
         </button>
       </div>
 
-      {/* Upload Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div role="dialog" aria-modal="true" aria-label={editingPack ? 'Editar pack' : 'Nuevo pack'} className="glass-card rounded-2xl p-4 sm:p-8 w-full max-w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">{editingPack ? 'Editar pack' : 'Nuevo pack de contenido'}</h2>
-              <button onClick={() => { setShowForm(false); resetForm(); }} aria-label="Cerrar" className="p-3 hover:bg-slate-800 rounded-lg transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <ContentForm
+        show={showForm}
+        editingPack={editingPack}
+        onClose={closeForm}
+        onSave={handleSave}
+        accessToken={accessTokenRef.current}
+      />
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-muted mb-2">Título</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none"
-                  placeholder="Premium Pack #1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-muted mb-2">Descripción</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 py-3 text-white focus:border-accent-violet focus:outline-none resize-none"
-                  placeholder="Descripción del contenido"
-                />
-              </div>
-
-              {/* Type toggle */}
-              <div>
-                <label className="block text-sm font-medium text-muted mb-2">Tipo de pack</label>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-dark-light/60 border border-slate-700/50">
-                  <button
-                    type="button"
-                    onClick={() => { setContentType('one_time'); if (price === '0') setPrice('25'); }}
-                    className={`py-2.5 px-4 rounded-md text-sm font-medium transition-all ${contentType === 'one_time' ? 'bg-accent-violet text-white' : 'text-muted hover:text-white'}`}
-                  >
-                    Pago único
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setContentType('subscription'); if (subscriptionPrice === '25') setSubscriptionPrice('9.99'); }}
-                    className={`py-2.5 px-4 rounded-md text-sm font-medium transition-all ${contentType === 'subscription' ? 'bg-accent-cyan text-white' : 'text-muted hover:text-white'}`}
-                  >
-                    Suscripción mensual
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-2">
-                    {contentType === 'one_time' ? 'Precio (USD)' : 'Precio único (USD)'}
-                  </label>
-                  {contentType === 'one_time' ? (
-                    <input
-                      type="number"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none"
-                    />
-                  ) : (
-                    <div className="w-full h-12 rounded-lg bg-dark-light/40 border border-slate-700/30 px-4 flex items-center text-muted text-sm">
-                      Sin precio único (suscripción)
-                    </div>
-                  )}
-                </div>
-                {contentType === 'subscription' && (
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-2">Precio mensual (USD)</label>
-                    <input
-                      type="number"
-                      value={subscriptionPrice}
-                      onChange={(e) => setSubscriptionPrice(e.target.value)}
-                      className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-cyan focus:outline-none"
-                      placeholder="9.99"
-                    />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Tipo de entrega</label>
-                  <select
-                    value={deliveryType}
-                    onChange={(e) => setDeliveryType(e.target.value)}
-                    className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none appearance-none"
-                  >
-                    <option value="download">Descarga directa</option>
-                    <option value="telegram">Acceso a Telegram</option>
-                    <option value="both">Ambos</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsActive(!isActive)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-slate-600'}`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isActive ? 'translate-x-5' : ''}`} />
-                </button>
-                <span className="text-sm text-muted">{isActive ? 'Activo' : 'Inactivo'}</span>
-              </div>
-
-              {deliveryType !== 'download' && (
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Link de Telegram</label>
-                  <input
-                    type="url"
-                    value={telegramLink}
-                    onChange={(e) => setTelegramLink(e.target.value)}
-                    className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 px-4 text-white focus:border-accent-violet focus:outline-none"
-                    placeholder="https://t.me/..."
-                  />
-                </div>
-              )}
-
-              {/* Upload Area */}
-              <div
-                className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${dragOver ? 'border-accent-cyan bg-accent-cyan/5' : 'border-slate-700/50'}`}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-              >
-                <Upload className="w-8 h-8 text-accent-violet mx-auto mb-3" />
-                <p className="text-sm font-medium mb-1">Subir archivos</p>
-                <p className="text-xs text-muted mb-3">Arrastrá o hacé click</p>
-                <label className="inline-flex px-4 py-2 bg-accent-violet/20 text-accent-violet rounded-lg cursor-pointer hover:bg-accent-violet/30 transition-colors text-sm font-medium">
-                  Seleccionar
-                  <input type="file" multiple accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
-                </label>
-              </div>
-
-              {/* Uploaded files */}
-              {uploadedUrls.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted">Archivos subidos:</p>
-                  {uploadedUrls.map((url, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-dark-light/50">
-                      <ImageIcon className="w-4 h-4 text-accent-cyan flex-shrink-0" />
-                      <span className="text-xs text-muted truncate flex-1">{url}</span>
-                      <button onClick={() => setUploadedUrls((prev) => prev.filter((_, idx) => idx !== i))} className="p-1 hover:text-red-400 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {uploading && <p className="text-sm text-accent-cyan animate-pulse">Subiendo archivos...</p>}
-
-              <button
-                onClick={handleSave}
-                disabled={!title || uploadedUrls.length === 0}
-                className="w-full py-3 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all disabled:opacity-50"
-              >
-                Guardar pack
-              </button>
-
-              <p className="text-xs text-muted text-center">
-                Nota: Si la entrega es por fuera de la app, Drops no se hace responsable.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Content List */}
       <div className="glass-card rounded-xl overflow-hidden">
         {packs.length === 0 ? (
           <div className="p-6 text-center text-muted">
@@ -376,7 +155,7 @@ export default function ContentPage() {
               <div key={pack.id} className="p-4 sm:p-6 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {pack.media_urls?.[0] ? (
-                    <img src={pack.media_urls[0]} alt={pack.title} loading="lazy" className="w-full h-full object-cover" />
+                    <Image src={pack.media_urls[0]} alt={pack.title} width={64} height={64} className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-muted" />
                   )}
@@ -399,9 +178,9 @@ export default function ContentPage() {
                   <button onClick={() => openEditForm(pack)} className="mt-1 flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">
                     <Pencil className="w-3 h-3" /> Editar
                   </button>
-                  <button onClick={() => handleDelete(pack.id)} disabled={deleting === pack.id}
+                  <button onClick={() => setConfirmDelete(pack.id)} disabled={deleting}
                     className="mt-1 flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50">
-                    <Trash2 className="w-3 h-3" /> {deleting === pack.id ? 'Eliminando...' : 'Eliminar'}
+                    <Trash2 className="w-3 h-3" /> {deleting ? 'Eliminando...' : 'Eliminar'}
                   </button>
                 </div>
               </div>
@@ -409,6 +188,16 @@ export default function ContentPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Eliminar pack"
+        message="¿Eliminar este pack? Los compradores perderán el acceso al contenido."
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }
