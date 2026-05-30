@@ -16,6 +16,37 @@ export default function AccessPage({ params }: { params: { token: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [signedUrls, setSignedUrls] = useState<string[]>([]);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadFile = async (url: string, index: number) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const ext = url.split('.').pop()?.split(/[?#]/)[0] || 'file';
+      const filename = `${content?.title || 'contenido'}_${index + 1}.${ext}`;
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download error:', err);
+    }
+  };
+
+  const downloadAll = async () => {
+    const urls = signedUrls.length > 0 ? signedUrls : (content?.media_urls || []);
+    if (urls.length === 0) return;
+    setDownloading(true);
+    for (let i = 0; i < urls.length; i++) {
+      await downloadFile(urls[i], i);
+      await new Promise(r => setTimeout(r, 800));
+    }
+    setDownloading(false);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -237,17 +268,19 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                     {content.media_urls.map((url: string, i: number) => {
                       const displayUrl = signedUrls[i] || url;
                       return (
-                      <a key={i} href={displayUrl} target="_blank" rel="noopener noreferrer"
-                        className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative block">
-                        {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                          <video src={displayUrl} className="w-full h-full object-cover" controls preload="metadata" />
-                        ) : (
-                          <Image src={displayUrl} alt="Contenido" fill className="object-cover" sizes="(max-width: 640px) 50vw, 33vw" />
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div key={i} className="aspect-square rounded-xl bg-dark-light/50 border border-slate-700/50 overflow-hidden hover:border-accent-violet/50 transition-colors group relative">
+                        <a href={displayUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                          {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                            <video src={displayUrl} className="w-full h-full object-cover" controls preload="metadata" />
+                          ) : (
+                            <Image src={displayUrl} alt="Contenido" fill className="object-cover" sizes="(max-width: 640px) 50vw, 33vw" />
+                          )}
+                        </a>
+                        <button onClick={() => downloadFile(displayUrl, i)}
+                          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity w-full h-full cursor-pointer">
                           <Download className="w-6 h-6 text-white" />
-                        </div>
-                      </a>
+                        </button>
+                      </div>
                       );
                     })}
                   </div>
@@ -270,11 +303,11 @@ export default function AccessPage({ params }: { params: { token: string } }) {
                 </div>
               )}
 
-              {content.delivery_type === 'download' && content.media_urls && content.media_urls.length > 0 && (
-                <a href={content.media_urls[0]} download
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-accent-violet text-white font-semibold rounded-xl neon-glow hover:bg-violet-600 transition-all">
-                  <Download className="w-5 h-5" /> Descargar contenido
-                </a>
+              {content.media_urls && content.media_urls.length > 0 && (
+                <button onClick={downloadAll} disabled={downloading}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-accent-violet text-white font-semibold rounded-xl neon-glow hover:bg-violet-600 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+                  <Download className="w-5 h-5" /> {downloading ? `Descargando... (${signedUrls.length || content.media_urls.length} archivos)` : `Descargar todo (${signedUrls.length || content.media_urls.length} archivos)`}
+                </button>
               )}
             </div>
           )}
