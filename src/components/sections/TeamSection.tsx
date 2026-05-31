@@ -20,7 +20,7 @@ const TeamSection = memo(function TeamSection() {
         </div>
         <div className="grid md:grid-cols-2 gap-12 items-center section-fade">
           <div className="space-y-5">
-            <p className="text-muted leading-relaxed">Drops nació en 2024 con una misión clara: que los creadores de contenido y modelos de IA puedan monetizar su trabajo sin fricción, sin comisiones abusivas y sin perder horas en procesos administrativos.</p>
+            <p className="text-muted leading-relaxed">Drops nació en 2024 con una misión clara: que los creadores de contenido puedan monetizar su trabajo sin fricción, sin comisiones abusivas y sin perder horas en procesos administrativos.</p>
             <p className="text-muted leading-relaxed">Somos un equipo de desarrolladores, expertos en marketing digital y legales que entienden el ecosistema creator economy. No somos una plataforma más — somos el partner que escala tu carrera.</p>
             <p className="text-muted leading-relaxed">Hoy trabajamos con +500 creadores activos en Latinoamérica y generamos más de $2M en ventas. Y recién empezamos.</p>
           </div>

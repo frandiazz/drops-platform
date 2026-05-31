@@ -9,7 +9,7 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
 export const metadata: Metadata = {
   title: 'Drops | Monetización Inteligente para Creadores',
-  description: 'La agencia de management definitiva para modelos de IA y creadores. Escalamos tu viralidad y monetizamos tu contenido con nuestra plataforma de cobro express sin registros.',
+  description: 'Plataforma de monetización para creadores de contenido. Pagos express, comisiones justas, sin registros complicados.',
   keywords: 'monetización, creadores, contenido, modelos IA, agencia, viralidad, TikTok, Instagram, plataforma de cobro',
   authors: [{ name: 'Drops' }],
   robots: 'index, follow',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Drops | Monetización Inteligente para Creadores',
-    description: 'La agencia de management definitiva para modelos de IA y creadores.',
+    description: 'Plataforma de monetización para creadores de contenido. Pagos express, comisiones justas, sin registros complicados.',
   },
 };
 
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "Drops",
-              "description": "Agencia de monetización y management para creadores de contenido y modelos de IA",
+              "description": "Plataforma de monetización para creadores de contenido",
               "url": siteUrl,
             }),
           }}

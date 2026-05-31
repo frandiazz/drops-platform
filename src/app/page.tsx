@@ -112,7 +112,7 @@ export default function Home() {
                   <span className="text-white">Vos enfocate en crear.</span>
                 </h1>
                 <p className="mt-6 text-lg sm:text-xl text-muted max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  La agencia de management definitiva para modelos de IA y creadores. Escalamos tu viralidad en redes y monetizamos tu contenido con nuestra plataforma de cobro express sin registros.
+                  La plataforma de monetización y management para creadores de contenido. Escalamos tu alcance en redes y potenciamos tus ingresos con pagos express, sin vueltas.
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <a href="/unite" className="px-8 py-4 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 text-center">

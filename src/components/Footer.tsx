@@ -12,7 +12,7 @@ const Footer = memo(function Footer() {
               <Logo size={28} />
             </Link>
             <p className="text-muted text-sm leading-relaxed max-w-sm">
-              La plataforma de monetización y management para creadores de contenido y modelos de IA. Maximizamos tus ingresos con tecnología de vanguardia.
+              La plataforma de monetización para creadores de contenido. Maximizá tus ingresos con tecnología de vanguardia.
             </p>
             <div className="flex flex-col gap-2 mt-6 text-sm text-muted">
               <a href="mailto:hola@drops.agency" className="flex items-center gap-2 hover:text-accent-cyan transition-colors">
