@@ -1,26 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { getAdmin } from '@/lib/admin-auth';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const dynamic = 'force-dynamic';
-
-async function getAdmin(token: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profile?.role !== 'admin') return null;
-  return { supabase, user };
-}
 
 export async function GET(request: Request) {
   try {
@@ -49,16 +33,16 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    const creatorIds = Array.from(new Set((data || []).map(w => w.creator_id)));
+    const creatorIds = Array.from(new Set((data || []).map((w: any) => w.creator_id)));
 
     const { data: profiles } = await admin.supabase
       .from('profiles')
       .select('id, stage_name, email')
       .in('id', creatorIds);
 
-    const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+    const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.id, p]));
 
-    const enriched = (data || []).map(w => ({
+    const enriched = (data || []).map((w: any) => ({
       ...w,
       creator_name: profileMap.get(w.creator_id)?.stage_name || '',
       creator_email: profileMap.get(w.creator_id)?.email || '',
@@ -88,14 +72,14 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { withdrawalId, status } = body;
 
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (withdrawalId && !UUID_REGEX.test(withdrawalId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-
-    if (!withdrawalId || !['approved', 'paid', 'rejected'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    if (!withdrawalId || !UUID_REGEX.test(withdrawalId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    // Validate state transition
+    if (!['approved', 'paid', 'rejected'].includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+
     const { data: current } = await admin.supabase
       .from('withdrawals')
       .select('status')
@@ -117,14 +101,14 @@ export async function PATCH(request: Request) {
       }, { status: 400 });
     }
 
-    const updateData: any = { status };
-    if (status === 'approved') updateData.approved_at = new Date().toISOString();
-    if (status === 'paid') updateData.paid_at = new Date().toISOString();
-    if (status === 'rejected') updateData.rejected_at = new Date().toISOString();
+    const updatePayload: any = { status };
+    if (status === 'approved') updatePayload.approved_at = new Date().toISOString();
+    if (status === 'paid') updatePayload.paid_at = new Date().toISOString();
+    if (status === 'rejected') updatePayload.rejected_at = new Date().toISOString();
 
     const { data, error } = await admin.supabase
       .from('withdrawals')
-      .update(updateData)
+      .update(updatePayload)
       .eq('id', withdrawalId)
       .select()
       .single();

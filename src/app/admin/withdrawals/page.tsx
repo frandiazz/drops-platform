@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DollarSign, Check, X, ChevronLeft, LogOut, Copy, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { DollarSign, Check, X, ChevronLeft, LogOut, CheckCircle, XCircle, Clock } from 'lucide-react';
 import Logo from '@/components/Logo';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/Toast';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Withdrawal {
   id: string;
@@ -21,12 +23,27 @@ interface Withdrawal {
   creator_email: string;
 }
 
+const methodLabels: Record<string, string> = {
+  bank: 'Transferencia bancaria',
+  crypto: 'USDT TRC20',
+  mp: 'Mercado Pago',
+};
+
+const statusConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bg: string; label: string }> = {
+  pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', label: 'Pendiente' },
+  approved: { icon: CheckCircle, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30', label: 'Aprobado' },
+  paid: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', label: 'Pagado' },
+  rejected: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', label: 'Rechazado' },
+};
+
 export default function AdminWithdrawalsPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
   const [updating, setUpdating] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ id: string; status: string } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -35,46 +52,55 @@ export default function AdminWithdrawalsPage() {
       if (profile?.role !== 'admin') { await supabase.auth.signOut(); router.push('/admin/login'); return; }
       fetchWithdrawals();
     });
-  }, [filter]);
+  }, [router, filter]);
 
   const fetchWithdrawals = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) return;
     setLoading(true);
-    const res = await fetch(`/api/admin/withdrawals?status=${filter}`, { headers: { authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    if (data.withdrawals) setWithdrawals(data.withdrawals);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/admin/withdrawals?status=${filter}`, { headers: { authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.withdrawals) {
+        setWithdrawals(data.withdrawals);
+      } else if (data.error) {
+        addToast(data.error, 'error');
+      }
+    } catch {
+      addToast('Error al cargar retiros', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAction = async (withdrawalId: string, status: string) => {
+    setUpdating(withdrawalId);
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    if (!token) return;
-    setUpdating(withdrawalId);
-    const res = await fetch('/api/admin/withdrawals', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ withdrawalId, status }),
-    });
-    const data = await res.json();
-    if (data.withdrawal) {
-      setWithdrawals(prev => prev.map(w => w.id === withdrawalId ? { ...w, ...data.withdrawal } : w));
+    if (!token) { setUpdating(null); return; }
+    try {
+      const res = await fetch('/api/admin/withdrawals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify({ withdrawalId, status }),
+      });
+      const data = await res.json();
+      if (data.withdrawal) {
+        setWithdrawals(prev => prev.map(w => w.id === withdrawalId ? { ...w, ...data.withdrawal } : w));
+        const label = status === 'approved' ? 'Aprobado' : status === 'paid' ? 'Pagado' : 'Rechazado';
+        addToast(`Retiro ${label.toLowerCase()} correctamente`, 'success');
+      } else {
+        addToast(data.error || 'Error al procesar', 'error');
+      }
+    } catch {
+      addToast('Error de conexión', 'error');
+    } finally {
+      setUpdating(null);
     }
-    setUpdating(null);
   };
-
-  const methodLabels: Record<string, string> = { bank: 'Transferencia bancaria', crypto: 'USDT TRC20', mp: 'Mercado Pago' };
 
   const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, w) => s + w.amount, 0);
-
-  const statusConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bg: string; label: string }> = {
-    pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', label: 'Pendiente' },
-    approved: { icon: CheckCircle, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30', label: 'Aprobado' },
-    paid: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', label: 'Pagado' },
-    rejected: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', label: 'Rechazado' },
-  };
 
   return (
     <div className="min-h-screen bg-dark">
@@ -99,7 +125,6 @@ export default function AdminWithdrawalsPage() {
           {['pending', 'approved', 'paid', 'rejected'].map((s) => {
             const cfg = statusConfig[s];
             const Icon = cfg.icon;
-            const count = withdrawals.length;
             return (
               <button key={s} onClick={() => setFilter(s)}
                 className={`glass rounded-xl p-4 text-center transition-all ${filter === s ? 'ring-2 ring-accent-violet' : 'hover:bg-slate-800/30'}`}>
@@ -121,7 +146,12 @@ export default function AdminWithdrawalsPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-12 text-muted">Cargando retiros...</div>
+          <div className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-accent-violet/30 border-t-accent-violet rounded-full animate-spin" />
+              <p className="text-muted text-sm">Cargando retiros...</p>
+            </div>
+          </div>
         ) : withdrawals.length === 0 ? (
           <div className="glass rounded-2xl p-12 text-center">
             <DollarSign className="w-12 h-12 text-muted mx-auto mb-4" />
@@ -156,18 +186,26 @@ export default function AdminWithdrawalsPage() {
                         <>
                           <button onClick={() => handleAction(w.id, 'approved')} disabled={updating === w.id}
                             className="px-4 py-3 min-h-[44px] bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
-                            <Check className="w-4 h-4" /> Aprobar
+                            {updating === w.id ? (
+                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <><Check className="w-4 h-4" /> Aprobar</>
+                            )}
                           </button>
-                          <button onClick={() => handleAction(w.id, 'rejected')} disabled={updating === w.id}
+                          <button onClick={() => setConfirmAction({ id: w.id, status: 'rejected' })} disabled={updating === w.id}
                             className="px-4 py-3 min-h-[44px] bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-semibold rounded-lg border border-red-500/30 transition-all flex items-center gap-2 disabled:opacity-50">
                             <X className="w-4 h-4" /> Rechazar
                           </button>
                         </>
                       )}
                       {w.status === 'approved' && (
-                        <button onClick={() => handleAction(w.id, 'paid')} disabled={updating === w.id}
+                        <button onClick={() => setConfirmAction({ id: w.id, status: 'paid' })} disabled={updating === w.id}
                           className="px-4 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
-                          <DollarSign className="w-4 h-4" /> Marcar como pagado
+                          {updating === w.id ? (
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <><DollarSign className="w-4 h-4" /> Marcar como pagado</>
+                          )}
                         </button>
                       )}
                     </div>
@@ -178,6 +216,22 @@ export default function AdminWithdrawalsPage() {
           </div>
         )}
       </main>
+
+      <ConfirmDialog
+        open={confirmAction !== null}
+        title={confirmAction?.status === 'paid' ? 'Marcar como pagado' : 'Rechazar retiro'}
+        message={confirmAction?.status === 'paid'
+          ? 'Confirmá que ya realizaste la transferencia al creador. Esta acción no se puede deshacer.'
+          : 'El retiro será rechazado. Esta acción no se puede deshacer. ¿Continuar?'}
+        confirmLabel={confirmAction?.status === 'paid' ? 'Sí, marcar pagado' : 'Rechazar'}
+        variant={confirmAction?.status === 'rejected' ? 'danger' : 'warning'}
+        onConfirm={() => {
+          if (!confirmAction) return;
+          handleAction(confirmAction.id, confirmAction.status);
+          setConfirmAction(null);
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

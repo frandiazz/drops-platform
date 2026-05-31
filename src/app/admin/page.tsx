@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
-import { Check, X, Copy, CheckCircle, XCircle, Clock, ExternalLink, LogOut, ChevronLeft, DollarSign } from 'lucide-react';
+import { Check, X, Copy, CheckCircle, XCircle, Clock, ExternalLink, LogOut, ChevronLeft, DollarSign, ChevronRight } from 'lucide-react';
 import Logo from '@/components/Logo';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Application {
   id: string;
@@ -27,14 +29,36 @@ interface Application {
   reviewed_at: string | null;
 }
 
+interface PageData {
+  total: number;
+  page: number;
+  hasMore: boolean;
+}
+
+const statusColors: Record<string, string> = {
+  pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+  approved: 'text-green-400 bg-green-500/10 border-green-500/30',
+  rejected: 'text-red-400 bg-red-500/10 border-red-500/30',
+};
+
+const statusIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  pending: Clock,
+  approved: CheckCircle,
+  rejected: XCircle,
+};
+
 export default function AdminPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [applications, setApplications] = useState<Application[]>([]);
   const [filter, setFilter] = useState<string>('pending');
   const [selected, setSelected] = useState<Application | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [pageData, setPageData] = useState<PageData>({ total: 0, page: 0, hasMore: false });
+  const [confirmAction, setConfirmAction] = useState<{ id: string; status: 'approved' | 'rejected' } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -42,19 +66,16 @@ export default function AdminPage() {
         router.push('/admin/login');
         return;
       }
-
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
         .maybeSingle();
-
       if (profile?.role !== 'admin') {
         await supabase.auth.signOut();
         router.push('/admin/login');
         return;
       }
-
       setUser(session.user);
       setChecking(false);
     });
@@ -65,48 +86,66 @@ export default function AdminPage() {
     fetchApplications();
   }, [user, filter]);
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (page = 0) => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) return;
-    const res = await fetch(`/api/admin/applications?status=${filter}`, {
-      headers: { authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (data.applications) setApplications(data.applications);
-  };
-
-  const handleAction = async (applicationId: string, status: 'approved' | 'rejected') => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
-
-    const res = await fetch('/api/admin/applications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ applicationId, status }),
-    });
-
-    const data = await res.json();
-    if (data.application) {
-      setApplications(prev => prev.map(a => a.id === applicationId ? data.application : a));
-      if (selected?.id === applicationId) setSelected(data.application);
+    try {
+      const res = await fetch(`/api/admin/applications?status=${filter}&page=${page}`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.applications) {
+        setApplications(data.applications);
+        setPageData({ total: data.total || 0, page: data.page || 0, hasMore: data.hasMore || false });
+      } else if (data.error) {
+        addToast(data.error, 'error');
+      }
+    } catch {
+      addToast('Error al cargar postulaciones', 'error');
     }
   };
 
-  const copyLink = (token: string) => {
+  const handleAction = async (applicationId: string, status: 'approved' | 'rejected') => {
+    setUpdating(applicationId);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setUpdating(null); return; }
+    try {
+      const res = await fetch('/api/admin/applications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify({ applicationId, status }),
+      });
+      const data = await res.json();
+      if (data.application) {
+        setApplications(prev => prev.map(a => a.id === applicationId ? { ...a, ...data.application } : a));
+        if (selected?.id === applicationId) setSelected({ ...selected, ...data.application });
+        addToast(status === 'approved' ? 'Postulación aprobada' : 'Postulación rechazada', 'success');
+      } else {
+        addToast(data.error || 'Error al procesar', 'error');
+      }
+    } catch {
+      addToast('Error de conexión', 'error');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const copyLink = useCallback((token: string) => {
     const link = `${window.location.origin}/register?token=${token}`;
     navigator.clipboard.writeText(link);
     setCopiedId(token);
+    addToast('Link de registro copiado', 'success');
     setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, [addToast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/admin/login');
   };
 
-  const totalByStatus = (status: string) => applications.filter(a => a.status === status).length;
+  const totalByStatus = (s: string) => pageData.total;
 
   if (checking) {
     return (
@@ -116,20 +155,8 @@ export default function AdminPage() {
     );
   }
 
-  const statusColors: Record<string, string> = {
-    pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
-    approved: 'text-green-400 bg-green-500/10 border-green-500/30',
-    rejected: 'text-red-400 bg-red-500/10 border-red-500/30',
-  };
-  const statusIcons: Record<string, any> = {
-    pending: Clock,
-    approved: CheckCircle,
-    rejected: XCircle,
-  };
-
   return (
     <div className="min-h-screen bg-dark">
-      {/* Header */}
       <header className="glass border-b border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -157,10 +184,10 @@ export default function AdminPage() {
           {['pending', 'approved', 'rejected'].map((s) => {
             const Icon = statusIcons[s];
             return (
-              <button key={s} onClick={() => { setFilter(s); setSelected(null); }}
+              <button key={s} onClick={() => { setFilter(s); setSelected(null); setPageData(prev => ({ ...prev, page: 0 })); }}
                 className={`glass rounded-xl p-4 text-center transition-all ${filter === s ? 'ring-2 ring-accent-violet' : 'hover:bg-slate-800/30'}`}>
                 <Icon className={`w-6 h-6 mx-auto mb-1 ${s === 'pending' ? 'text-yellow-400' : s === 'approved' ? 'text-green-400' : 'text-red-400'}`} />
-                <p className="text-2xl font-bold">{totalByStatus(s)}</p>
+                <p className="text-2xl font-bold">{s === 'pending' ? pageData.total : null}</p>
                 <p className="text-xs text-muted capitalize">{s}</p>
               </button>
             );
@@ -206,6 +233,21 @@ export default function AdminPage() {
                 );
               })}
             </div>
+
+            {/* Pagination */}
+            {(pageData.hasMore || pageData.page > 0) && (
+              <div className="flex items-center justify-center gap-4 mt-4">
+                <button onClick={() => fetchApplications(pageData.page - 1)} disabled={pageData.page === 0}
+                  className="px-4 py-2 text-sm rounded-lg glass hover:bg-slate-800/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                  Anterior
+                </button>
+                <span className="text-sm text-muted">Página {pageData.page + 1}</span>
+                <button onClick={() => fetchApplications(pageData.page + 1)} disabled={!pageData.hasMore}
+                  className="px-4 py-2 text-sm rounded-lg glass hover:bg-slate-800/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1">
+                  Siguiente <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Detail */}
@@ -271,13 +313,21 @@ export default function AdminPage() {
                 {/* Actions */}
                 {selected.status === 'pending' && (
                   <div className="flex gap-3">
-                    <button onClick={() => handleAction(selected.id, 'approved')}
-                      className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2">
-                      <Check className="w-5 h-5" /> Aprobar
+                    <button onClick={() => { setConfirmAction({ id: selected.id, status: 'approved' }); }} disabled={updating === selected.id}
+                      className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                      {updating === selected.id ? (
+                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <><Check className="w-5 h-5" /> Aprobar</>
+                      )}
                     </button>
-                    <button onClick={() => handleAction(selected.id, 'rejected')}
-                      className="flex-1 h-12 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold rounded-xl border border-red-500/30 transition-all flex items-center justify-center gap-2">
-                      <X className="w-5 h-5" /> Rechazar
+                    <button onClick={() => { setConfirmAction({ id: selected.id, status: 'rejected' }); }} disabled={updating === selected.id}
+                      className="flex-1 h-12 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold rounded-xl border border-red-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                      {updating === selected.id ? (
+                        <span className="w-5 h-5 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                      ) : (
+                        <><X className="w-5 h-5" /> Rechazar</>
+                      )}
                     </button>
                   </div>
                 )}
@@ -285,7 +335,7 @@ export default function AdminPage() {
                 {selected.status === 'approved' && selected.invite_token && (
                   <div className="space-y-3">
                     <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                      <p className="text-sm font-semibold text-green-400 mb-2">✓ Aprobada</p>
+                      <p className="text-sm font-semibold text-green-400 mb-2">Aprobada</p>
                       <p className="text-xs text-muted mb-3">Copiá este link y enviaselo a la creadora por sus redes:</p>
                       <div className="flex gap-2">
                         <input readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/register?token=${selected.invite_token}`}
@@ -318,6 +368,22 @@ export default function AdminPage() {
           </div>
         </div>
       </main>
+
+      <ConfirmDialog
+        open={confirmAction !== null}
+        title={confirmAction?.status === 'approved' ? 'Aprobar postulación' : 'Rechazar postulación'}
+        message={confirmAction?.status === 'approved'
+          ? 'Se generará un link de invitación para que la creadora se registre. ¿Continuar?'
+          : 'La postulación será marcada como rechazada. Esta acción no se puede deshacer. ¿Continuar?'}
+        confirmLabel={confirmAction?.status === 'approved' ? 'Aprobar' : 'Rechazar'}
+        variant={confirmAction?.status === 'rejected' ? 'danger' : 'default'}
+        onConfirm={() => {
+          if (!confirmAction) return;
+          handleAction(confirmAction.id, confirmAction.status);
+          setConfirmAction(null);
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }
