@@ -36,6 +36,40 @@ const statusConfig: Record<string, { icon: React.ComponentType<{ className?: str
   rejected: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', label: 'Rechazado' },
 };
 
+const statBadges: Record<string, { bg: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  pending: { bg: 'bg-yellow-500/10', icon: Clock, color: 'text-yellow-400' },
+  approved: { bg: 'bg-blue-500/10', icon: CheckCircle, color: 'text-blue-400' },
+  paid: { bg: 'bg-green-500/10', icon: CheckCircle, color: 'text-green-400' },
+  rejected: { bg: 'bg-red-500/10', icon: XCircle, color: 'text-red-400' },
+};
+
+function SkeletonWithdrawals() {
+  return (
+    <div className="min-h-screen bg-dark p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="h-8 w-40 bg-slate-800/50 animate-pulse rounded-lg" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-28 glass rounded-xl p-4">
+              <div className="w-6 h-6 bg-slate-800/50 animate-pulse rounded mx-auto mb-2" />
+              <div className="h-8 w-12 bg-slate-800/50 animate-pulse rounded mx-auto mb-1" />
+              <div className="h-4 w-16 bg-slate-800/30 animate-pulse rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-28 glass rounded-xl p-5">
+              <div className="h-5 w-32 bg-slate-800/50 animate-pulse rounded mb-3" />
+              <div className="h-4 w-64 bg-slate-800/30 animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminWithdrawalsPage() {
   const router = useRouter();
   const { addToast } = useToast();
@@ -53,6 +87,10 @@ export default function AdminWithdrawalsPage() {
       fetchWithdrawals();
     });
   }, [router, filter]);
+
+  useEffect(() => {
+    if (!loading && withdrawals.length === 0) return;
+  }, [loading, withdrawals]);
 
   const fetchWithdrawals = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -102,6 +140,10 @@ export default function AdminWithdrawalsPage() {
 
   const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, w) => s + w.amount, 0);
 
+  if (loading) {
+    return <SkeletonWithdrawals />;
+  }
+
   return (
     <div className="min-h-screen bg-dark">
       <header className="glass border-b border-slate-800/50">
@@ -109,7 +151,7 @@ export default function AdminWithdrawalsPage() {
           <div className="flex items-center gap-3">
             <Link href="/admin" className="text-muted hover:text-white transition-colors"><ChevronLeft className="w-5 h-5" /></Link>
             <Logo size={28} showText={false} />
-            <h1 className="text-lg font-bold">Retiros</h1>
+            <h1 className="text-lg font-bold"><span className="gradient-text">Retiros</span></h1>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/admin/login'); }} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors py-2">
@@ -119,43 +161,39 @@ export default function AdminWithdrawalsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 animate-slide-up">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {['pending', 'approved', 'paid', 'rejected'].map((s) => {
-            const cfg = statusConfig[s];
-            const Icon = cfg.icon;
+            const badge = statBadges[s];
+            const BadgeIcon = badge.icon;
             return (
               <button key={s} onClick={() => setFilter(s)}
-                className={`glass rounded-xl p-4 text-center transition-all ${filter === s ? 'ring-2 ring-accent-violet' : 'hover:bg-slate-800/30'}`}>
-                <Icon className={`w-6 h-6 mx-auto mb-1 ${cfg.color}`} />
+                className={`glass-card rounded-xl p-4 text-center transition-all ${filter === s ? 'ring-2 ring-accent-violet' : ''}`}>
+                <div className={`w-10 h-10 rounded-lg ${badge.bg} flex items-center justify-center mx-auto mb-2`}>
+                  <BadgeIcon className={`w-5 h-5 ${badge.color}`} />
+                </div>
                 <p className="text-2xl font-bold">{withdrawals.filter(w => w.status === s).length}</p>
-                <p className="text-xs text-muted capitalize">{cfg.label}</p>
+                <p className="text-xs text-muted capitalize">{s}</p>
               </button>
             );
           })}
         </div>
 
         {filter === 'pending' && totalPending > 0 && (
-          <div className="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
+          <div className="mb-6 p-5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between glass-card">
             <div>
               <p className="text-sm font-semibold text-yellow-400">Total pendiente por retirar</p>
-              <p className="text-2xl font-bold text-white">${totalPending.toFixed(2)} USD</p>
+              <p className="text-2xl font-black gradient-text">${totalPending.toFixed(2)} USD</p>
             </div>
           </div>
         )}
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-accent-violet/30 border-t-accent-violet rounded-full animate-spin" />
-              <p className="text-muted text-sm">Cargando retiros...</p>
-            </div>
-          </div>
-        ) : withdrawals.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
+        {withdrawals.length === 0 ? (
+          <div className="glass-card rounded-2xl p-12 text-center">
             <DollarSign className="w-12 h-12 text-muted mx-auto mb-4" />
-            <p className="text-muted">No hay solicitudes de retiro {filter === 'pending' ? 'pendientes' : `con estado "${filter}"`}</p>
+            <p className="text-muted font-medium">No hay solicitudes de retiro</p>
+            <p className="text-xs text-muted mt-1">{filter === 'pending' ? 'Cuando un creador solicite un retiro, aparecerá acá.' : `No hay retiros con estado "${filter}"`}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -163,17 +201,17 @@ export default function AdminWithdrawalsPage() {
               const cfg = statusConfig[w.status] || statusConfig.pending;
               const StatusIcon = cfg.icon;
               return (
-                <div key={w.id} className="glass rounded-xl p-5">
+                <div key={w.id} className="glass-card rounded-xl p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="font-bold text-lg text-accent-cyan">${w.amount.toFixed(2)} USD</span>
+                        <span className="font-black text-lg gradient-text">${w.amount.toFixed(2)} USD</span>
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.color}`}>
                           <StatusIcon className="w-3.5 h-3.5" /> {cfg.label}
                         </span>
                       </div>
                       <div className="text-sm text-muted space-y-1">
-                        <p><span className="text-white">{w.creator_name || 'Sin nombre'}</span> · {w.creator_email}</p>
+                        <p><span className="text-white font-medium">{w.creator_name || 'Sin nombre'}</span> · {w.creator_email}</p>
                         <p>Método: {methodLabels[w.method] || w.method}</p>
                         <p className="text-xs">Solicitado: {new Date(w.created_at).toLocaleString('es-AR')}</p>
                         {w.approved_at && <p className="text-xs">Aprobado: {new Date(w.approved_at).toLocaleString('es-AR')}</p>}
@@ -185,7 +223,7 @@ export default function AdminWithdrawalsPage() {
                       {w.status === 'pending' && (
                         <>
                           <button onClick={() => handleAction(w.id, 'approved')} disabled={updating === w.id}
-                            className="px-4 py-3 min-h-[44px] bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
+                            className="px-4 py-3 min-h-[44px] bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg neon-glow transition-all flex items-center gap-2 disabled:opacity-50">
                             {updating === w.id ? (
                               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
@@ -200,7 +238,7 @@ export default function AdminWithdrawalsPage() {
                       )}
                       {w.status === 'approved' && (
                         <button onClick={() => setConfirmAction({ id: w.id, status: 'paid' })} disabled={updating === w.id}
-                          className="px-4 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50">
+                          className="px-4 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg neon-glow transition-all flex items-center gap-2 disabled:opacity-50">
                           {updating === w.id ? (
                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           ) : (

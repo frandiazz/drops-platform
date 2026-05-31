@@ -49,20 +49,20 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md animate-slide-up">
         <Link href="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors mb-8 py-2">
           <ArrowLeft className="w-4 h-4" /> Volver al inicio
         </Link>
 
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Logo size={40} showText={false} /><span className="text-2xl font-bold">Admin</span>
+            <Logo size={40} showText={false} /><span className="text-2xl font-bold gradient-text">Admin</span>
           </div>
-          <h1 className="text-2xl font-extrabold">Acceso Administrador</h1>
+          <h1 className="text-2xl font-extrabold">Acceso <span className="gradient-text">Administrador</span></h1>
           <p className="text-muted mt-2 text-sm">Solo personal autorizado</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="glass rounded-2xl p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-8 space-y-5">
           {error && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
           )}
