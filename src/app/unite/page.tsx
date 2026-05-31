@@ -29,13 +29,17 @@ export default function UnitePage() {
                 optimizamos tu perfil y maximizamos tus ingresos. Seleccionamos personalmente 
                 a cada creadora.
               </p>
+              <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 mb-6">
+                <p className="text-xs text-yellow-400 font-semibold mb-1">📋 Proceso de selección</p>
+                <p className="text-xs text-muted">Completá el formulario con tus datos y redes. Si quedás seleccionada, te contactamos por Instagram o TikTok para darte el acceso.</p>
+              </div>
               <ul className="space-y-3 mb-8 flex-1">
                 {[
                   'Gestión de Instagram, TikTok y X',
                   'Estrategia de contenido personalizada',
                   'Plataforma de cobro express incluida',
+                  'Comisión fija del 20% en todas tus ventas',
                   'Soporte y asesoramiento continuo',
-                  'Selección exclusiva',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-muted">
                     <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />

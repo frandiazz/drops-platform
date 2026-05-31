@@ -19,6 +19,7 @@ export default function ApplyPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -76,6 +77,10 @@ export default function ApplyPage() {
       const uploadedUrls = await uploadPhotos();
       setUploading(false);
 
+      if (!termsAccepted) {
+        throw new Error('Debés aceptar los términos y condiciones');
+      }
+
       const res = await fetch('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,6 +88,7 @@ export default function ApplyPage() {
           ...form,
           age: form.age ? parseInt(form.age) : null,
           photo_urls: uploadedUrls,
+          terms_accepted: true,
         }),
       });
 
@@ -109,8 +115,8 @@ export default function ApplyPage() {
             </div>
             <h1 className="text-3xl font-extrabold mb-4">¡Postulación Enviada!</h1>
             <p className="text-muted mb-4">
-              Recibimos tu solicitud. Nuestro equipo la va a revisar y si avanzamos, 
-              te vamos a contactar por tus redes sociales.
+              Recibimos tu solicitud. Nuestro equipo la va a revisar y si avanzamos,
+              te vamos a contactar por <span className="text-white font-semibold">Instagram</span> o <span className="text-white font-semibold">TikTok</span>.
             </p>
             <p className="text-sm text-muted mb-8">
               Guardá este link para ver el estado de tu postulación:
@@ -143,8 +149,9 @@ export default function ApplyPage() {
               Postulación para <span className="gradient-text">Management</span>
             </h1>
             <p className="text-muted text-sm max-w-lg mx-auto">
-              Completá el formulario con tus datos y algunas fotos. Vamos a revisar 
-              tu perfil y si creemos que tenés potencial, te contactamos por redes.
+              Completá el formulario con tus datos y algunas fotos. Vamos a revisar
+              tu perfil y si creemos que tenés potencial, te contactamos por
+              Instagram o TikTok para coordinar los próximos pasos.
             </p>
           </div>
 
@@ -249,8 +256,24 @@ export default function ApplyPage() {
                 placeholder="Contanos sobre vos, qué contenido hacés, por qué querés que te managemos..." />
             </div>
 
-            <button type="submit" disabled={loading || uploading}
-              className="w-full h-14 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50">
+            <div className="flex items-start gap-3">
+              <input
+                id="terms"
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-slate-600 bg-dark-light accent-accent-violet focus:ring-accent-violet"
+              />
+              <label htmlFor="terms" className="text-xs text-muted leading-relaxed cursor-pointer select-none">
+                Acepto los{' '}
+                <Link href="/terminos" className="text-accent-cyan hover:underline">términos y condiciones</Link> de Drops
+                y confirmo que soy mayor de 18 años. Entiendo que, si soy seleccionada,
+                Drops se comunicará conmigo a través de mis redes sociales.
+              </label>
+            </div>
+
+            <button type="submit" disabled={loading || uploading || !termsAccepted}
+              className="w-full h-14 bg-accent-violet text-white font-bold rounded-xl neon-glow hover:bg-violet-600 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
               {uploading ? 'Subiendo fotos...' : loading ? 'Enviando...' : (
                 <><Send className="w-5 h-5" /> Enviar Postulación</>
               )}
