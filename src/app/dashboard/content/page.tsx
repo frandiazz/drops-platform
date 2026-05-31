@@ -136,6 +136,7 @@ export default function ContentPage() {
       </div>
 
       <ContentForm
+        key={editingPack?.id || 'new'}
         show={showForm}
         editingPack={editingPack}
         onClose={closeForm}
