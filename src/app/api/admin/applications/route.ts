@@ -3,8 +3,6 @@ import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getAdmin } from '@/lib/admin-auth';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
@@ -69,12 +67,8 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { applicationId, status } = body;
 
-    if (!applicationId || !UUID_REGEX.test(applicationId)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
-
-    if (!['approved', 'rejected'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    if (!applicationId || !['approved', 'rejected'].includes(status)) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
     const updatePayload: any = { status, reviewed_at: new Date().toISOString() };
