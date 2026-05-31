@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck, Link as LinkIcon } from 'lucide-react';
+import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck, Link as LinkIcon, Lock } from 'lucide-react';
 import type { Profile } from '@/types';
 
 export default function CreatorProfilePage({ params }: { params: { creatorId: string } }) {
@@ -166,7 +166,13 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                   <Link href={checkoutHref} className="block">
                     <div className="aspect-square bg-dark-light/50 relative">
                       {pack.media_urls?.[0] ? (
-                        <Image src={pack.media_urls[0]} alt={pack.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
+                        <>
+                          <Image src={pack.media_urls[0]} alt={pack.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
+                          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 backdrop-blur-lg bg-black/40 group-hover:bg-black/30 transition-colors">
+                            <Lock className="w-8 h-8 text-white/80" />
+                            <span className="text-[10px] font-medium text-white/90 uppercase tracking-wider">Bloqueado</span>
+                          </div>
+                        </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">📦</div>
                       )}
