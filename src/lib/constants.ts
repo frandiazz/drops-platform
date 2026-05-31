@@ -2,8 +2,8 @@
 
 // Commission rates (percentage)
 export const COMMISSION_SOLO = 0.2;
-export const COMMISSION_SOCIAL = 0.3;
-export const COMMISSION_FULL = 0.5;
+export const COMMISSION_SOCIAL = 0.2;
+export const COMMISSION_FULL = 0.2;
 export const DEFAULT_COMMISSION = COMMISSION_SOLO;
 
 // Limits

@@ -1,9 +1,9 @@
 import { memo } from 'react';
 
 const testimonials = [
-  { name: 'Valentina López', role: 'Modelo IA · Instagram + TikTok', location: 'Buenos Aires, Argentina', gradient: 'from-accent-violet to-accent-cyan', text: 'Pasé de $0 a $4.2K/mes en 3 meses. El checkout express es una locura, mis fans compran sin pensarlo dos veces.' },
+  { name: 'Valentina López', role: 'Creadora de Contenido · Instagram + TikTok', location: 'Buenos Aires, Argentina', gradient: 'from-accent-violet to-accent-cyan', text: 'Pasé de $0 a $4.2K/mes en 3 meses. El checkout express es una locura, mis fans compran sin pensarlo dos veces.' },
   { name: 'Martín Rodríguez', role: 'Creador de Contenido · TikTok + X', location: 'Bogotá, Colombia', gradient: 'from-accent-cyan to-green-400', text: 'Pasé de 5K a 80K seguidores en 4 meses. El equipo de chatter maneja las interacciones mientras yo solo creo contenido.' },
-  { name: 'Camila Fernández', role: 'Modelo IA · Instagram', location: 'Santiago, Chile', gradient: 'from-pink-500 to-accent-violet', text: 'Cero chargebacks en 6 meses desde que estoy con Drops. El equipo legal se encarga de todo y yo retiro tranquila.' },
+  { name: 'Camila Fernández', role: 'Creadora de Contenido · Instagram', location: 'Santiago, Chile', gradient: 'from-pink-500 to-accent-violet', text: 'Cero chargebacks en 6 meses desde que estoy con Drops. El equipo legal se encarga de todo y yo retiro tranquila.' },
 ];
 
 function StarIcon() {

@@ -379,8 +379,8 @@ export default function SettingsPage() {
           </h3>
           <div className="space-y-3">
             {[
-              { label: 'Full Management', desc: 'Manejamos todo: IG, X, Threads, TikTok, Telegram', commission: 50 },
-              { label: 'Social Media Only', desc: 'Manejamos redes, vos manejás Telegram', commission: 30 },
+              { label: 'Full Management', desc: 'Manejamos todo: IG, X, Threads, TikTok, Telegram', commission: 20 },
+              { label: 'Social Media Only', desc: 'Manejamos redes, vos manejás Telegram', commission: 20 },
               { label: 'Solo Plataforma', desc: 'Usás Drops, hacés todo sola', commission: 20 },
             ].map((plan, i) => {
               const isActive = commissionRate === plan.commission;

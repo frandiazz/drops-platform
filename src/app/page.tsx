@@ -66,8 +66,9 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const gross = fans * price;
-  const rates = { solo: 0.8, social: 0.7, full: 0.5 };
-  const net = Math.round(gross * rates[plan]);
+  const rates = { solo: 0.8, social: 0.8, full: 0.8 };
+  const monthlyFees = { solo: 0, social: 299, full: 599 };
+  const net = Math.round(Math.max(0, gross * rates[plan] - monthlyFees[plan]));
 
   const formatNumber = (n: number) => n.toLocaleString('es-AR');
 
@@ -231,8 +232,8 @@ export default function Home() {
                     <div className="flex gap-2">
                       {[
                         { key: 'solo' as const, label: 'Solo Plataforma', comm: '20%' },
-                        { key: 'social' as const, label: 'Social Media', comm: '30%' },
-                        { key: 'full' as const, label: 'Full Management', comm: '50%' },
+                        { key: 'social' as const, label: 'Social Media', comm: '20%' },
+                        { key: 'full' as const, label: 'Full Management', comm: '20%' },
                       ].map(p => (
                         <button key={p.key} onClick={() => setPlan(p.key)}
                           className={`flex-1 h-12 text-xs font-semibold rounded-lg border transition-colors ${plan === p.key ? 'border-accent-violet bg-accent-violet/10 text-accent-violet' : 'border-slate-700/50 bg-dark-light/50 text-muted hover:border-slate-600'}`}>
@@ -246,7 +247,7 @@ export default function Home() {
                 <div className="flex flex-col items-center justify-center text-center">
                   <p className="text-sm text-muted mb-2">Ingreso mensual estimado</p>
                   <span className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-accent-cyan">${formatNumber(gross)}</span>
-                  <p className="mt-4 text-xs text-muted">* Basado en una comisión de Drops del {plan === 'solo' ? '20%' : plan === 'social' ? '30%' : '50%'}.</p>
+                  <p className="mt-4 text-xs text-muted">* Basado en una comisión fija de Drops del 20% {plan !== 'solo' ? `y costo de gestión de $${monthlyFees[plan]}/mes` : ''}.</p>
                   <div className="mt-6 flex items-center gap-2 text-xs text-muted">
                     <svg className="w-4 h-4 text-accent-violet" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg>
                     Tu ganancia neta: <span className="text-green-400 font-semibold">${formatNumber(net)}</span>

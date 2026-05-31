@@ -36,9 +36,9 @@ export default function TermsPage() {
               <h2 className="text-xl font-bold text-white mb-4">2. Servicios Ofrecidos</h2>
               <p>Drops ofrece los siguientes servicios:</p>
               <ul className="list-disc pl-6 mt-2 space-y-2">
-                <li><strong>Full Management:</strong> Gestión completa de redes sociales (Instagram, X, Threads, TikTok) y cuenta de Telegram. Comisión: 50%.</li>
-                <li><strong>Social Media Only:</strong> Gestión de redes sociales. El creador administra su Telegram. Comisión: 30%.</li>
-                <li><strong>Solo Plataforma:</strong> Acceso a la plataforma de monetización. El creador gestiona todo. Comisión: 20% (puede reducirse a 10% por alto volumen de ventas).</li>
+                <li><strong>Full Management:</strong> Gestión completa de redes sociales (Instagram, X, Threads, TikTok) y cuenta de Telegram. Comisión: 20%. Costo fijo: $599/mes.</li>
+                <li><strong>Social Media Only:</strong> Gestión de redes sociales. El creador administra su Telegram. Comisión: 20%. Costo fijo: $299/mes.</li>
+                <li><strong>Solo Plataforma:</strong> Acceso a la plataforma de monetización. El creador gestiona todo. Comisión: 20%.</li>
                 <li><strong>Mini Curso:</strong> Formación de 10 horas por WhatsApp sobre viralización. Costo: $100.000 ARS o equivalente en USD.</li>
               </ul>
             </section>

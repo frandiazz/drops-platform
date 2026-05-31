@@ -10,7 +10,7 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 export const metadata: Metadata = {
   title: 'Drops | Monetización Inteligente para Creadores',
   description: 'Plataforma de monetización para creadores de contenido. Pagos express, comisiones justas, sin registros complicados.',
-  keywords: 'monetización, creadores, contenido, modelos IA, agencia, viralidad, TikTok, Instagram, plataforma de cobro',
+  keywords: 'monetización, creadores, contenido, agencia, viralidad, TikTok, Instagram, plataforma de cobro',
   authors: [{ name: 'Drops' }],
   robots: 'index, follow',
   openGraph: {
