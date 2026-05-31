@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
       tiktok: profile.tiktok || '',
       twitter: profile.twitter || '',
     });
-  } catch {
-    console.error('Profile API error');
+  } catch (err) {
+    console.error('Profile API error:', err);
     return NextResponse.json({ error: 'Error al cargar perfil' }, { status: 500 });
   }
 }

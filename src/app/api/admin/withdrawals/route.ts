@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
     let query = admin.supabase
       .from('withdrawals')
-      .select('id, creator_id, amount, status, created_at, approved_at, paid_at, rejected_at')
+      .select('id, creator_id, amount, method, status, created_at, approved_at, paid_at, rejected_at')
       .order('created_at', { ascending: false });
 
     if (status && status !== 'all') query = query.eq('status', status);

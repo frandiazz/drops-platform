@@ -70,7 +70,7 @@ export default function UnitePage() {
                 {[
                   'Checkout express sin registro para tus fans',
                   'Subí y vendé tu contenido al instante',
-                  'Cobrá por Mercado Pago en ARS',
+                  'Cobrá por Mercado Pago en USD',
                   'Retirá tus ganancias 24-48hs',
                   'Registro inmediato, sin revisión',
                 ].map((item, i) => (

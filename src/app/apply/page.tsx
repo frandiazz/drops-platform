@@ -73,13 +73,13 @@ export default function ApplyPage() {
     }
 
     try {
-      setUploading(true);
-      const uploadedUrls = await uploadPhotos();
-      setUploading(false);
-
       if (!termsAccepted) {
         throw new Error('Debés aceptar los términos y condiciones');
       }
+
+      setUploading(true);
+      const uploadedUrls = await uploadPhotos();
+      setUploading(false);
 
       const res = await fetch('/api/apply', {
         method: 'POST',

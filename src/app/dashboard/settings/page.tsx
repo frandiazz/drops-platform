@@ -379,19 +379,18 @@ export default function SettingsPage() {
           </h3>
           <div className="space-y-3">
             {[
-              { label: 'Full Management', desc: 'Manejamos todo: IG, X, Threads, TikTok, Telegram', commission: 20 },
-              { label: 'Social Media Only', desc: 'Manejamos redes, vos manejás Telegram', commission: 20 },
-              { label: 'Solo Plataforma', desc: 'Usás Drops, hacés todo sola', commission: 20 },
+              { label: 'Full Management', desc: 'Manejamos todo: IG, X, TikTok, Telegram' },
+              { label: 'Social Media Only', desc: 'Manejamos redes, vos manejás Telegram' },
+              { label: 'Solo Plataforma', desc: 'Usás Drops, hacés todo sola' },
             ].map((plan, i) => {
-              const isActive = commissionRate === plan.commission;
               return (
-              <div key={i} className={`p-4 rounded-lg border transition-colors ${isActive ? 'border-accent-violet bg-accent-violet/5' : 'border-slate-700/50 bg-dark-light/30'}`}>
+              <div key={i} className="p-4 rounded-lg border border-slate-700/50 bg-dark-light/30">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold">{plan.label}</p>
                     <p className="text-xs text-muted">{plan.desc}</p>
                   </div>
-                  <span className={`text-sm font-bold ${isActive ? 'text-accent-violet' : 'text-muted'}`}>{plan.commission}%</span>
+                  <span className="text-sm font-bold text-accent-violet">20%</span>
                 </div>
               </div>
               );
