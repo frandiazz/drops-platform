@@ -18,9 +18,10 @@ export default function Header() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Navegación principal">
           <Link href="/" className="flex items-center gap-2 group" aria-label="Drops - Inicio">
             <div className="relative w-8 h-8">
-              <svg className="w-8 h-8 text-accent-cyan group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] transition-all duration-300" viewBox="0 0 32 40" fill="none" aria-hidden="true">
-                <path d="M16 0C16 0 0 18 0 26C0 34.837 7.163 40 16 40C24.837 40 32 34.837 32 26C32 18 16 0 16 0Z" fill="url(#dropGrad)"/>
-                <defs><linearGradient id="dropGrad" x1="0" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
+              <svg className="w-8 h-8 text-accent-cyan group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] transition-all duration-300" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                <path d="M18 3 Q8 14 6 22 C5 28 10 33 18 33 C26 33 31 28 30 22 Q28 14 18 3 Z" fill="url(#dropGrad)"/>
+                <path d="M18 3 L15 10 L18 13 L21 10 Z" fill="white" opacity="0.12"/>
+                <defs><linearGradient id="dropGrad" x1="5" y1="3" x2="31" y2="33" gradientUnits="userSpaceOnUse"><stop stopColor="#7C3AED"/><stop offset="1" stopColor="#06B6D4"/></linearGradient></defs>
               </svg>
             </div>
             <span className="text-xl font-bold tracking-tight">Drops</span>
