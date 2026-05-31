@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
               <input id="admin-email" type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-12 rounded-lg bg-dark-light/80 border border-slate-700/50 pl-10 pr-4 text-white placeholder-slate-500 focus:border-accent-violet focus:outline-none transition-colors"
-                placeholder="admin@drops.agency" />
+                placeholder="dropsdrops2005@gmail.com" />
             </div>
           </div>
 
