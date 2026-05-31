@@ -33,6 +33,7 @@ interface PageData {
   total: number;
   page: number;
   hasMore: boolean;
+  counts: Record<string, number>;
 }
 
 const statusColors: Record<string, string> = {
@@ -103,7 +104,8 @@ export default function AdminPage() {
   const [selected, setSelected] = useState<Application | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [pageData, setPageData] = useState<PageData>({ total: 0, page: 0, hasMore: false });
+  const [pageData, setPageData] = useState<PageData>({ total: 0, page: 0, hasMore: false, counts: { pending: 0, approved: 0, rejected: 0 } });
+  const [fetching, setFetching] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ id: string; status: 'approved' | 'rejected' } | null>(null);
 
   useEffect(() => {
@@ -136,6 +138,7 @@ export default function AdminPage() {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) return;
+    setFetching(true);
     try {
       const res = await fetch(`/api/admin/applications?status=${filter}&page=${page}`, {
         headers: { authorization: `Bearer ${token}` },
@@ -143,12 +146,19 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.applications) {
         setApplications(data.applications);
-        setPageData({ total: data.total || 0, page: data.page || 0, hasMore: data.hasMore || false });
+        setPageData({
+          total: data.total || 0,
+          page: data.page || 0,
+          hasMore: data.hasMore || false,
+          counts: data.counts || pageData.counts,
+        });
       } else if (data.error) {
         addToast(data.error, 'error');
       }
     } catch {
       addToast('Error al cargar postulaciones', 'error');
+    } finally {
+      setFetching(false);
     }
   };
 
@@ -224,7 +234,7 @@ export default function AdminPage() {
           {['pending', 'approved', 'rejected'].map((s) => {
             const badge = statBadges[s];
             const BadgeIcon = badge.icon;
-            const count = s === filter ? pageData.total : applications.filter(a => a.status === s).length;
+            const count = pageData.counts[s] ?? 0;
             return (
               <button key={s} onClick={() => { setFilter(s); setSelected(null); setPageData(prev => ({ ...prev, page: 0 })); }}
                 className={`glass-card rounded-xl p-4 text-center transition-all cursor-pointer ${filter === s ? 'ring-2 ring-accent-violet' : ''}`}>
@@ -241,8 +251,13 @@ export default function AdminPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Applicants list */}
           <div>
-            <h2 className="text-xl font-bold mb-4 capitalize"><span className="gradient-text">{filter === 'all' ? 'Todas' : filter}</span> ({applications.length})</h2>
-            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+            <h2 className="text-xl font-bold mb-4 capitalize"><span className="gradient-text">{filter === 'all' ? 'Todas' : filter}</span> ({pageData.counts[filter] ?? 0})</h2>
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 relative">
+              {fetching && (
+                <div className="absolute inset-0 bg-dark/60 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+                  <div className="w-6 h-6 border-2 border-accent-violet/30 border-t-accent-violet rounded-full animate-spin" />
+                </div>
+              )}
               {applications.length === 0 ? (
                 <div className="glass-card rounded-2xl p-12 text-center">
                   <Inbox className="w-12 h-12 text-muted mx-auto mb-4" />

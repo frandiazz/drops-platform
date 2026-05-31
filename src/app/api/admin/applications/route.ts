@@ -37,12 +37,24 @@ export async function GET(request: Request) {
     const { data, error, count } = await query.range(from, to);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    // Fetch counts per status for stat cards
+    const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+      admin.supabase.from('applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      admin.supabase.from('applications').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+      admin.supabase.from('applications').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
+    ]);
+
     return NextResponse.json({
       applications: data,
       total: count,
       page,
       hasMore: (data || []).length === pageSize,
       pageSize,
+      counts: {
+        pending: pendingRes.count || 0,
+        approved: approvedRes.count || 0,
+        rejected: rejectedRes.count || 0,
+      },
     });
   } catch (err) {
     console.error('Admin applications list error:', err);
