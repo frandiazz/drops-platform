@@ -2,13 +2,13 @@
 
 import { useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Trash2, Plus, X, Film, FileText } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface ContentFormProps {
   show: boolean;
   editingPack: { id: string; title: string; description?: string | null; price: number; delivery_type?: string | null; telegram_link?: string | null; media_urls?: string[] | null; is_active?: boolean | null; type?: 'one_time' | 'subscription' | null; subscription_price?: number | null } | null;
   onClose: () => void;
   onSave: (data: ContentFormData) => void;
-  accessToken?: string;
 }
 
 export interface ContentFormData {
@@ -38,7 +38,7 @@ function formatSize(bytes: number): string {
   return `${bytes} B`;
 }
 
-export default function ContentForm({ show, editingPack, onClose, onSave, accessToken }: ContentFormProps) {
+export default function ContentForm({ show, editingPack, onClose, onSave }: ContentFormProps) {
   const [title, setTitle] = useState(editingPack?.title || '');
   const [description, setDescription] = useState(editingPack?.description || '');
   const [price, setPrice] = useState(editingPack?.price.toString() || '25');
@@ -61,28 +61,24 @@ export default function ContentForm({ show, editingPack, onClose, onSave, access
 
     setUploadingFiles(prev => [...prev, { name: file.name, size: formatSize(file.size) }]);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('bucket', 'content');
-      const headers: Record<string, string> = {};
-      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-      const res = await fetch('/api/upload-file', {
-        method: 'POST',
-        headers,
-        body: formData,
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('content').upload(fileName, file, {
+        contentType: file.type,
+        upsert: false,
       });
-      const data = await res.json();
-      if (data.url) {
-        setUploadedUrls((prev) => [...prev, data.url]);
-      } else {
-        alert(data.error || 'Error al subir archivo');
+      if (error) {
+        alert(error.message === 'The resource already exists' ? 'El archivo ya existe, intentá de nuevo' : (error.message || 'Error al subir archivo'));
+        return;
       }
+      const { data: { publicUrl } } = supabase.storage.from('content').getPublicUrl(fileName);
+      setUploadedUrls((prev) => [...prev, publicUrl]);
     } catch {
       alert('Error de conexión al subir archivo');
     } finally {
       setUploadingFiles(prev => prev.filter(f => f.name !== file.name));
     }
-  }, [accessToken]);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

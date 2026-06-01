@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Image as ImageIcon, Plus, Pencil, Trash2, Link as LinkIcon, Check } from 'lucide-react';
 import Image from 'next/image';
@@ -22,7 +22,6 @@ export default function ContentPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const accessTokenRef = useRef<string>('');
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   const getCheckoutUrl = (pack: ContentPack) => `${siteUrl}/checkout?creatorId=${user?.id || ''}&packId=${pack.id}`;
@@ -30,7 +29,6 @@ export default function ContentPage() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        accessTokenRef.current = session.access_token;
         setUser(session.user);
         const { data } = await supabase
           .from('content')
@@ -141,7 +139,6 @@ export default function ContentPage() {
         editingPack={editingPack}
         onClose={closeForm}
         onSave={handleSave}
-        accessToken={accessTokenRef.current}
       />
 
       <div className="glass-card rounded-xl overflow-hidden">
