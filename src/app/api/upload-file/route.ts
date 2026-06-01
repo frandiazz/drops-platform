@@ -42,8 +42,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se envió ningún archivo' }, { status: 400 });
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Archivo muy grande (máx 50MB)' }, { status: 400 });
+    const maxSize = file.type.startsWith('video/') ? 500 * 1024 * 1024 : 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const label = file.type.startsWith('video/') ? '500MB' : '50MB';
+      return NextResponse.json({ error: `Archivo muy grande (máx ${label})` }, { status: 400 });
     }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/ogg', 'application/pdf'];

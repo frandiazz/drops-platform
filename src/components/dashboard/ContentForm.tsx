@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Upload, Image as ImageIcon, Trash2, Plus, X } from 'lucide-react';
+import { Upload, Image as ImageIcon, Trash2, Plus, X, Film, FileText } from 'lucide-react';
 
 interface ContentFormProps {
   show: boolean;
@@ -23,6 +23,21 @@ export interface ContentFormData {
   subscriptionPrice: string;
 }
 
+const MAX_IMG_SIZE = 50 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
+
+function fileIcon(type: string) {
+  if (type.startsWith('video/')) return Film;
+  if (type === 'application/pdf') return FileText;
+  return ImageIcon;
+}
+
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${bytes} B`;
+}
+
 export default function ContentForm({ show, editingPack, onClose, onSave, accessToken }: ContentFormProps) {
   const [title, setTitle] = useState(editingPack?.title || '');
   const [description, setDescription] = useState(editingPack?.description || '');
@@ -34,10 +49,17 @@ export default function ContentForm({ show, editingPack, onClose, onSave, access
   const [contentType, setContentType] = useState<'one_time' | 'subscription'>(editingPack?.type || 'one_time');
   const [subscriptionPrice, setSubscriptionPrice] = useState(editingPack?.subscription_price?.toString() || editingPack?.price.toString() || '25');
   const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<{ name: string; size: string }[]>([]);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    setUploading(true);
+    const maxSize = file.type.startsWith('video/') ? MAX_VIDEO_SIZE : MAX_IMG_SIZE;
+    if (file.size > maxSize) {
+      const label = file.type.startsWith('video/') ? '500MB' : '50MB';
+      alert(`"${file.name}" es muy grande (máx ${label})`);
+      return;
+    }
+
+    setUploadingFiles(prev => [...prev, { name: file.name, size: formatSize(file.size) }]);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -52,13 +74,15 @@ export default function ContentForm({ show, editingPack, onClose, onSave, access
       const data = await res.json();
       if (data.url) {
         setUploadedUrls((prev) => [...prev, data.url]);
+      } else {
+        alert(data.error || 'Error al subir archivo');
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      alert('Error de conexión al subir archivo');
     } finally {
-      setUploading(false);
+      setUploadingFiles(prev => prev.filter(f => f.name !== file.name));
     }
-  }, []);
+  }, [accessToken]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -181,7 +205,7 @@ export default function ContentForm({ show, editingPack, onClose, onSave, access
             onDrop={handleDrop}>
             <Upload className="w-8 h-8 text-accent-violet mx-auto mb-3" />
             <p className="text-sm font-medium mb-1">Subir archivos</p>
-            <p className="text-xs text-muted mb-3">Arrastrá o hacé click</p>
+            <p className="text-xs text-muted mb-3">Imágenes hasta 50MB · Videos hasta 500MB</p>
             <label className="inline-flex px-4 py-2 bg-accent-violet/20 text-accent-violet rounded-lg cursor-pointer hover:bg-accent-violet/30 transition-colors text-sm font-medium">
               Seleccionar
               <input type="file" multiple accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
@@ -190,22 +214,37 @@ export default function ContentForm({ show, editingPack, onClose, onSave, access
 
           {uploadedUrls.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted">Archivos subidos:</p>
-              {uploadedUrls.map((url, i) => (
+              <p className="text-sm font-medium text-muted">Archivos subidos ({uploadedUrls.length})</p>
+              {uploadedUrls.map((url, i) => {
+                const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+                const Icon = isVideo ? Film : ImageIcon;
+                return (
+                  <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-dark-light/50">
+                    <Icon className="w-4 h-4 text-accent-cyan flex-shrink-0" />
+                    <span className="text-xs text-muted truncate flex-1">{url.split('/').pop() || url}</span>
+                    <button onClick={() => setUploadedUrls((prev) => prev.filter((_, idx) => idx !== i))} className="p-1 hover:text-red-400 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {uploadingFiles.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-accent-cyan font-medium">Subiendo archivos...</p>
+              {uploadingFiles.map((f, i) => (
                 <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-dark-light/50">
-                  <ImageIcon className="w-4 h-4 text-accent-cyan flex-shrink-0" />
-                  <span className="text-xs text-muted truncate flex-1">{url}</span>
-                  <button onClick={() => setUploadedUrls((prev) => prev.filter((_, idx) => idx !== i))} className="p-1 hover:text-red-400 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="w-4 h-4 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin flex-shrink-0" />
+                  <span className="text-xs text-muted truncate flex-1">{f.name}</span>
+                  <span className="text-[10px] text-muted">{f.size}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {uploading && <p className="text-sm text-accent-cyan animate-pulse">Subiendo archivos...</p>}
-
-          <button onClick={handleSubmit} disabled={!title || uploadedUrls.length === 0}
+          <button onClick={handleSubmit} disabled={!title || uploadedUrls.length === 0 || uploadingFiles.length > 0}
             className="w-full py-3 bg-accent-violet text-white font-semibold rounded-lg neon-glow hover:bg-violet-600 transition-all disabled:opacity-50">
             Guardar pack
           </button>
