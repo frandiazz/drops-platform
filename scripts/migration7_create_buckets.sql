@@ -1,7 +1,7 @@
 -- Create storage buckets for avatars and content
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('avatars', 'avatars', true),
-       ('content', 'content', true)
+INSERT INTO storage.buckets (id, name, public, file_size_limit) 
+VALUES ('avatars', 'avatars', true, null),
+       ('content', 'content', true, 524288000)
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow public access to avatars bucket (SELECT for everyone)
