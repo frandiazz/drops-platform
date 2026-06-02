@@ -61,20 +61,36 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
 
     setUploadingFiles(prev => [...prev, { name: file.name, size: formatSize(file.size) }]);
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('content').upload(fileName, file, {
-        contentType: file.type,
-        upsert: false,
-      });
-      if (error) {
-        alert(error.message === 'The resource already exists' ? 'El archivo ya existe, intentá de nuevo' : (error.message || 'Error al subir archivo'));
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        alert('Debés iniciar sesión para subir archivos');
         return;
       }
-      const { data: { publicUrl } } = supabase.storage.from('content').getPublicUrl(fileName);
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/content/${fileName}`;
+
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': file.type || 'application/octet-stream',
+          'x-upsert': 'true',
+        },
+        body: file,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
+      }
+
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/content/${fileName}`;
       setUploadedUrls((prev) => [...prev, publicUrl]);
-    } catch {
-      alert('Error de conexión al subir archivo');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error de conexión al subir archivo');
     } finally {
       setUploadingFiles(prev => prev.filter(f => f.name !== file.name));
     }
