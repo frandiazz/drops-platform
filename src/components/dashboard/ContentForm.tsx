@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Trash2, Plus, X, Film, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { upload as blobUpload } from '@vercel/blob/client';
+import { put as blobPut } from '@vercel/blob/client';
 
 interface ContentFormProps {
   show: boolean;
@@ -70,15 +70,27 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
       }
 
       if (isVideo) {
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
-        const pathname = `videos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
         const ac = new AbortController();
         const timeout = setTimeout(() => { ac.abort(); alert('Tiempo de espera agotado. Probá con un video más chico o mejor conexión.'); }, 600000);
         try {
-          const blob = await blobUpload(pathname, file, {
+          const tokenRes = await fetch('/api/blob-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileType: file.type,
+              accessToken: session.access_token,
+            }),
+          });
+          if (!tokenRes.ok) {
+            const err = await tokenRes.json().catch(() => ({}));
+            throw new Error(err.error || 'Error al obtener token de subida');
+          }
+          const { token, pathname } = await tokenRes.json();
+
+          const blob = await blobPut(pathname, file, {
             access: 'public',
-            handleUploadUrl: '/api/blob-upload',
-            clientPayload: session.access_token,
+            token,
             contentType: file.type,
             multipart: true,
             abortSignal: ac.signal,
