@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Trash2, Plus, X, Film, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { put as blobPut } from '@vercel/blob/client';
 
 interface ContentFormProps {
   show: boolean;
@@ -24,8 +23,7 @@ export interface ContentFormData {
   subscriptionPrice: string;
 }
 
-const MAX_IMG_SIZE = 50 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function fileIcon(type: string) {
   if (type.startsWith('video/')) return Film;
@@ -50,14 +48,11 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
   const [contentType, setContentType] = useState<'one_time' | 'subscription'>(editingPack?.type || 'one_time');
   const [subscriptionPrice, setSubscriptionPrice] = useState(editingPack?.subscription_price?.toString() || editingPack?.price.toString() || '25');
   const [dragOver, setDragOver] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<{ name: string; size: string; progress?: number }[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<{ name: string; size: string }[]>([]);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    const isVideo = file.type.startsWith('video/');
-    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMG_SIZE;
-    if (file.size > maxSize) {
-      const label = isVideo ? '500MB' : '50MB';
-      alert(`"${file.name}" es muy grande (máx ${label})`);
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`"${file.name}" es muy grande (máx 50MB)`);
       return;
     }
 
@@ -69,65 +64,29 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
         return;
       }
 
-      if (isVideo) {
-        const ac = new AbortController();
-        const timeout = setTimeout(() => { ac.abort(); alert('Tiempo de espera agotado. Probá con un video más chico o mejor conexión.'); }, 600000);
-        try {
-          const tokenRes = await fetch('/api/blob-upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fileName: file.name,
-              fileType: file.type,
-              accessToken: session.access_token,
-            }),
-          });
-          if (!tokenRes.ok) {
-            const err = await tokenRes.json().catch(() => ({}));
-            throw new Error(err.error || 'Error al obtener token de subida');
-          }
-          const { token, pathname } = await tokenRes.json();
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/content/${fileName}`;
 
-          const blob = await blobPut(pathname, file, {
-            access: 'public',
-            token,
-            contentType: file.type,
-            multipart: true,
-            abortSignal: ac.signal,
-            onUploadProgress: ({ percentage }) => {
-              setUploadingFiles(prev => prev.map(f => f.name === file.name ? { ...f, progress: percentage } : f));
-            },
-          });
-          setUploadedUrls((prev) => [...prev, blob.url]);
-        } finally {
-          clearTimeout(timeout);
-        }
-      } else {
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
-        const uploadUrl = `${supabaseUrl}/storage/v1/object/content/${fileName}`;
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': file.type || 'application/octet-stream',
+          'x-upsert': 'true',
+        },
+        body: file,
+      });
 
-        const res = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': file.type || 'application/octet-stream',
-            'x-upsert': 'true',
-          },
-          body: file,
-        });
-
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
-        }
-
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/content/${fileName}`;
-        setUploadedUrls((prev) => [...prev, publicUrl]);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
       }
+
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/content/${fileName}`;
+      setUploadedUrls((prev) => [...prev, publicUrl]);
     } catch (err) {
-      if (err && typeof err === 'object' && 'name' in err && (err as any).name === 'AbortError') return;
       alert(err instanceof Error ? err.message : 'Error de conexión al subir archivo');
     } finally {
       setUploadingFiles(prev => prev.filter(f => f.name !== file.name));
@@ -255,7 +214,7 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
             onDrop={handleDrop}>
             <Upload className="w-8 h-8 text-accent-violet mx-auto mb-3" />
             <p className="text-sm font-medium mb-1">Subir archivos</p>
-            <p className="text-xs text-muted mb-3">Imágenes hasta 50MB · Videos hasta 500MB</p>
+            <p className="text-xs text-muted mb-3">Máx 50MB por archivo (imágenes, videos, PDF)</p>
             <label className="inline-flex px-4 py-2 bg-accent-violet/20 text-accent-violet rounded-lg cursor-pointer hover:bg-accent-violet/30 transition-colors text-sm font-medium">
               Seleccionar
               <input type="file" multiple accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
@@ -285,17 +244,10 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
             <div className="space-y-2">
               <p className="text-sm text-accent-cyan font-medium">Subiendo archivos...</p>
               {uploadingFiles.map((f, i) => (
-                <div key={i} className="flex flex-col gap-1 p-2 rounded-lg bg-dark-light/50">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin flex-shrink-0" />
-                    <span className="text-xs text-muted truncate flex-1">{f.name}</span>
-                    <span className="text-[10px] text-muted">{f.progress != null ? `${Math.round(f.progress)}%` : f.size}</span>
-                  </div>
-                  {f.progress != null && (
-                    <div className="w-full h-1 bg-slate-700/50 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent-cyan rounded-full transition-all duration-300" style={{ width: `${f.progress}%` }} />
-                    </div>
-                  )}
+                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-dark-light/50">
+                  <div className="w-4 h-4 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin flex-shrink-0" />
+                  <span className="text-xs text-muted truncate flex-1">{f.name}</span>
+                  <span className="text-[10px] text-muted">{f.size}</span>
                 </div>
               ))}
             </div>
