@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { Image as ImageIcon, Plus, Pencil, Trash2, Link as LinkIcon, Check } from 'lucide-react';
+import { Image as ImageIcon, Plus, Pencil, Trash2, Link as LinkIcon, Check, Film } from 'lucide-react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import type { ContentPack } from '@/types';
@@ -12,6 +12,11 @@ import type { User } from '@supabase/supabase-js';
 
 const ContentForm = dynamic(() => import('@/components/dashboard/ContentForm'), { ssr: false });
 const ConfirmDialog = dynamic(() => import('@/components/ConfirmDialog'), { ssr: false });
+
+function firstImage(urls: string[] | null | undefined): string | null {
+  if (!urls) return null;
+  return urls.find(url => !/\.(mp4|webm|ogg)$/i.test(url)) || null;
+}
 
 export default function ContentPage() {
   const { addToast } = useToast();
@@ -152,11 +157,16 @@ export default function ContentPage() {
             {packs.map((pack) => (
               <div key={pack.id} className="p-4 sm:p-6 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-dark-light/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {pack.media_urls?.[0] ? (
-                    <Image src={pack.media_urls[0]} alt={pack.title} width={64} height={64} className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-6 h-6 text-muted" />
-                  )}
+                  {(() => {
+                    const img = firstImage(pack.media_urls);
+                    return img ? (
+                      <Image src={img} alt={pack.title} width={64} height={64} className="w-full h-full object-cover" />
+                    ) : pack.media_urls?.length ? (
+                      <Film className="w-6 h-6 text-muted" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-muted" />
+                    );
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{pack.title}</p>

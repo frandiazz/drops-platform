@@ -6,8 +6,13 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck, Link as LinkIcon, Lock } from 'lucide-react';
+import { Star, ExternalLink, Shield, Zap, Mail, Instagram, Music2, BadgeCheck, Link as LinkIcon, Lock, Film } from 'lucide-react';
 import type { Profile } from '@/types';
+
+function firstImage(urls: string[] | null | undefined): string | null {
+  if (!urls) return null;
+  return urls.find(url => !/\.(mp4|webm|ogg)$/i.test(url)) || null;
+}
 
 export default function CreatorProfilePage({ params }: { params: { creatorId: string } }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -165,17 +170,26 @@ export default function CreatorProfilePage({ params }: { params: { creatorId: st
                 <div key={pack.id} className="group rounded-xl overflow-hidden glass-card transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
                   <Link href={checkoutHref} className="block">
                     <div className="aspect-square bg-dark-light/50 relative">
-                      {pack.media_urls?.[0] ? (
-                        <>
-                          <Image src={pack.media_urls[0]} alt={pack.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
-                          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 backdrop-blur-lg bg-black/40 group-hover:bg-black/30 transition-colors">
-                            <Lock className="w-8 h-8 text-white/80" />
-                            <span className="text-[10px] font-medium text-white/90 uppercase tracking-wider">Bloqueado</span>
+                      {(() => {
+                        const img = firstImage(pack.media_urls);
+                        return img ? (
+                          <>
+                            <Image src={img} alt={pack.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 backdrop-blur-lg bg-black/40 group-hover:bg-black/30 transition-colors">
+                              <Lock className="w-8 h-8 text-white/80" />
+                              <span className="text-[10px] font-medium text-white/90 uppercase tracking-wider">Bloqueado</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-dark-light/30">
+                            <Film className="w-10 h-10 text-muted/50" />
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 backdrop-blur-lg bg-black/40 group-hover:bg-black/30 transition-colors">
+                              <Lock className="w-8 h-8 text-white/80" />
+                              <span className="text-[10px] font-medium text-white/90 uppercase tracking-wider">Bloqueado</span>
+                            </div>
                           </div>
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl">📦</div>
-                      )}
+                        );
+                      })()}
                       <div className="absolute bottom-1.5 left-1.5">
                         <span className="px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md text-[11px] font-bold text-white leading-none inline-block">
                           {pack.type === 'subscription' ? `$${pack.subscription_price}/mes` : `$${pack.price}`}
