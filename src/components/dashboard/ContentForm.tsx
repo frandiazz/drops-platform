@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Trash2, Plus, X, Film, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { upload as blobUpload } from '@vercel/blob/client';
 
 interface ContentFormProps {
   show: boolean;
@@ -52,9 +53,10 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
   const [uploadingFiles, setUploadingFiles] = useState<{ name: string; size: string }[]>([]);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    const maxSize = file.type.startsWith('video/') ? MAX_VIDEO_SIZE : MAX_IMG_SIZE;
+    const isVideo = file.type.startsWith('video/');
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMG_SIZE;
     if (file.size > maxSize) {
-      const label = file.type.startsWith('video/') ? '500MB' : '50MB';
+      const label = isVideo ? '500MB' : '50MB';
       alert(`"${file.name}" es muy grande (máx ${label})`);
       return;
     }
@@ -67,28 +69,41 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
         return;
       }
 
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/content/${fileName}`;
+      if (isVideo) {
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
+        const pathname = `videos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const blob = await blobUpload(pathname, file, {
+          access: 'public',
+          handleUploadUrl: '/api/blob-upload',
+          clientPayload: session.access_token,
+          contentType: file.type,
+          multipart: true,
+        });
+        setUploadedUrls((prev) => [...prev, blob.url]);
+      } else {
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/content/${fileName}`;
 
-      const res = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': file.type || 'application/octet-stream',
-          'x-upsert': 'true',
-        },
-        body: file,
-      });
+        const res = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': file.type || 'application/octet-stream',
+            'x-upsert': 'true',
+          },
+          body: file,
+        });
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
+        }
+
+        const publicUrl = `${supabaseUrl}/storage/v1/object/public/content/${fileName}`;
+        setUploadedUrls((prev) => [...prev, publicUrl]);
       }
-
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/content/${fileName}`;
-      setUploadedUrls((prev) => [...prev, publicUrl]);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error de conexión al subir archivo');
     } finally {
