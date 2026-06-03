@@ -80,6 +80,7 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
             handleUploadUrl: '/api/blob-upload',
             clientPayload: session.access_token,
             contentType: file.type,
+            multipart: true,
             abortSignal: ac.signal,
             onUploadProgress: ({ percentage }) => {
               setUploadingFiles(prev => prev.map(f => f.name === file.name ? { ...f, progress: percentage } : f));
