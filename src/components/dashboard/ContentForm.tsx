@@ -50,7 +50,7 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
   const [contentType, setContentType] = useState<'one_time' | 'subscription'>(editingPack?.type || 'one_time');
   const [subscriptionPrice, setSubscriptionPrice] = useState(editingPack?.subscription_price?.toString() || editingPack?.price.toString() || '25');
   const [dragOver, setDragOver] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<{ name: string; size: string }[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<{ name: string; size: string; progress?: number }[]>([]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     const isVideo = file.type.startsWith('video/');
@@ -72,14 +72,23 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
       if (isVideo) {
         const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
         const pathname = `videos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const blob = await blobUpload(pathname, file, {
-          access: 'public',
-          handleUploadUrl: '/api/blob-upload',
-          clientPayload: session.access_token,
-          contentType: file.type,
-          multipart: true,
-        });
-        setUploadedUrls((prev) => [...prev, blob.url]);
+        const ac = new AbortController();
+        const timeout = setTimeout(() => { ac.abort(); alert('Tiempo de espera agotado. Probá con un video más chico o mejor conexión.'); }, 600000);
+        try {
+          const blob = await blobUpload(pathname, file, {
+            access: 'public',
+            handleUploadUrl: '/api/blob-upload',
+            clientPayload: session.access_token,
+            contentType: file.type,
+            abortSignal: ac.signal,
+            onUploadProgress: ({ percentage }) => {
+              setUploadingFiles(prev => prev.map(f => f.name === file.name ? { ...f, progress: percentage } : f));
+            },
+          });
+          setUploadedUrls((prev) => [...prev, blob.url]);
+        } finally {
+          clearTimeout(timeout);
+        }
       } else {
         const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
         const fileName = `content/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
@@ -105,6 +114,7 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
         setUploadedUrls((prev) => [...prev, publicUrl]);
       }
     } catch (err) {
+      if (err && typeof err === 'object' && 'name' in err && (err as any).name === 'AbortError') return;
       alert(err instanceof Error ? err.message : 'Error de conexión al subir archivo');
     } finally {
       setUploadingFiles(prev => prev.filter(f => f.name !== file.name));
@@ -262,10 +272,17 @@ export default function ContentForm({ show, editingPack, onClose, onSave }: Cont
             <div className="space-y-2">
               <p className="text-sm text-accent-cyan font-medium">Subiendo archivos...</p>
               {uploadingFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-dark-light/50">
-                  <div className="w-4 h-4 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin flex-shrink-0" />
-                  <span className="text-xs text-muted truncate flex-1">{f.name}</span>
-                  <span className="text-[10px] text-muted">{f.size}</span>
+                <div key={i} className="flex flex-col gap-1 p-2 rounded-lg bg-dark-light/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin flex-shrink-0" />
+                    <span className="text-xs text-muted truncate flex-1">{f.name}</span>
+                    <span className="text-[10px] text-muted">{f.progress != null ? `${Math.round(f.progress)}%` : f.size}</span>
+                  </div>
+                  {f.progress != null && (
+                    <div className="w-full h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                      <div className="h-full bg-accent-cyan rounded-full transition-all duration-300" style={{ width: `${f.progress}%` }} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
